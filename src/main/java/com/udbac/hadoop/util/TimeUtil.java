@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
  * 时间控制工具类
  */
 public class TimeUtil {
-    public static final String DATE_FORMAT = "yyyy-MM-dd";
+    public static final String DATE_FORMAT = "yyyyMMdd";
 
     /**
      * 获取昨日的日期格式字符串数据
@@ -47,7 +47,7 @@ public class TimeUtil {
     public static boolean isValidateRunningDate(String input) {
         Matcher matcher = null;
         boolean result = false;
-        String regex = "[0-9]{4}-[0-9]{2}-[0-9]{2}";
+        String regex = "[0-9]{4}[0-9]{2}[0-9]{2}";
         if (input != null && !input.isEmpty()) {
             Pattern pattern = Pattern.compile(regex);
             matcher = pattern.matcher(input);
@@ -64,7 +64,7 @@ public class TimeUtil {
      * @param input
      * @return
      */
-    public static long parseString2Long(String input) {
+    public static long parseStringDate2Long(String input) {
         return parseString2Long(input, DATE_FORMAT);
     }
 
@@ -91,7 +91,7 @@ public class TimeUtil {
      * @param input
      * @return
      */
-    public static String parseLong2String(long input) {
+    public static String parseLong2StringDate(long input) {
         return parseLong2String(input, DATE_FORMAT);
     }
 
@@ -155,9 +155,16 @@ public class TimeUtil {
         cal.set(Calendar.MILLISECOND, 0);
         return cal.getTimeInMillis();
     }
+
+
+    public static final String TIME_FORMAT = "HHmmss";
     /**
-     * long转化为String类型的time formatType:HH:mm:ss
+     * long转化为String类型的time formatType:HHmmss
      */
+
+    public static String longToTime(long currentTime){
+        return longToTime(currentTime, TIME_FORMAT);
+    }
     public static String longToTime(long currentTime, String formatType) {
         Date dateOld = new Date(currentTime); // 根据long类型的毫秒数生命一个date类型的时间
         String sDateTime = dateToString(dateOld, formatType); // 把date类型的时间转换为string
@@ -167,13 +174,20 @@ public class TimeUtil {
         } catch (ParseException e) {
             e.printStackTrace();
         }
-        return dateToString(date,"HH:mm:ss");
+        return dateToString(date,TIME_FORMAT);
     }
+
+    public static long timeToLong(String strTime){
+        return timeToLong(strTime, TIME_FORMAT);
+    }
+
     /**
      * String类型的时间 转化为long类型的毫秒数 formatType:HH:mm:ss
      */
     public static long timeToLong(String strTime, String formatType) {
-        if(strTime.length()!=8){return 0;}
+        if (strTime.length() != 6) {
+            return 3;
+        }
         Date date = null; // String类型转成date类型
         try {
             date = stringToDate(strTime, formatType);
@@ -195,9 +209,9 @@ public class TimeUtil {
     }
     public static Date stringToDate(String strTime, String formatType)
             throws ParseException {
-        SimpleDateFormat formatter = new SimpleDateFormat(formatType);
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd"+formatType);
         Date date = null;
-        date = formatter.parse(strTime);
+        date = formatter.parse("19700102"+strTime);
         return date;
     }
 }
