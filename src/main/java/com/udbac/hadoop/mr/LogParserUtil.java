@@ -1,7 +1,8 @@
 package com.udbac.hadoop.mr;
 
-import com.udbac.hadoop.common.SDCLogConstants;
-import com.udbac.hadoop.util.IPSeekerExt;
+import com.udbac.hadoop.common.LogConstants;
+import com.udbac.hadoop.util.IPv4Handler;
+import com.udbac.hadoop.util.SplitValueBuilder;
 import com.udbac.hadoop.util.TimeUtil;
 import eu.bitwalker.useragentutils.UserAgent;
 import org.apache.commons.lang.StringUtils;
@@ -17,25 +18,38 @@ import java.util.Map;
  */
 public class LogParserUtil {
     private final static Logger logger = Logger.getLogger(LogParserUtil.class);
-    private static IPSeekerExt ipSeekerExt = new IPSeekerExt();
 
-    public static Map<String, String> handleLog(String[] tokens) {
+    public static String handleLog(String[] tokens, String[] keys) {
+        SplitValueBuilder svb = new SplitValueBuilder();
+        for (String key : keys) {
+            svb.add(handleLogMap(tokens).get(key));
+        }
+        return svb.toString();
+    }
+
+    public static Map<String, String> handleLogMap(String[] lineSplits) {
         Map<String, String> logMap = new HashMap<>();
-        logMap.put(SDCLogConstants.LOG_COLUMN_NAME_Date_Time, TimeUtil.handleTime(tokens[0] + " " + tokens[1]));
-        logMap.put(SDCLogConstants.LOG_COLUMN_NAME_CS_USERNAME, tokens[3]);
-        logMap.put(SDCLogConstants.LOG_COLUMN_CS_HOST, tokens[4]);
-        logMap.put(SDCLogConstants.LOG_COLUMN_NAME_CSMETHOD, tokens[5]);
-        logMap.put(SDCLogConstants.LOG_COLUMN_NAME_CSURISTEM, tokens[6]);
-        logMap.put(SDCLogConstants.LOG_COLUMN_NAME_SCSTATUS, tokens[8]);
-        logMap.put(SDCLogConstants.LOG_COLUMN_NAME_DCSID, tokens[14]);
-        handleIP(logMap, tokens[2]);
-        handleQuery(logMap,tokens[7]);
-        handleUA(logMap, tokens[11]);
+        String date_time = TimeUtil.handleTime(lineSplits[0] +" "+ lineSplits[1]);
+        logMap.put(LogConstants.LOG_COLUMN_DATETIME, date_time);
+        logMap.put(LogConstants.LOG_COLUMN_IP, lineSplits[2]);
+        handleIP(logMap, lineSplits[2]);
+        logMap.put(LogConstants.LOG_COLUMN_USERNAME, lineSplits[3]);
+        logMap.put(LogConstants.LOG_COLUMN_HOST, lineSplits[4]);
+        logMap.put(LogConstants.LOG_COLUMN_METHOD, lineSplits[5]);
+        logMap.put(LogConstants.LOG_COLUMN_URISTEM, lineSplits[6]);
+        handleQuery(logMap, lineSplits[7]);
+        logMap.put(LogConstants.LOG_COLUMN_STATUS, lineSplits[8]);
+        logMap.put(LogConstants.LOG_COLUMN_BYTES, lineSplits[9]);
+        logMap.put(LogConstants.LOG_COLUMN_VERSION, lineSplits[10]);
+        handleUA(logMap, lineSplits[11]);
+        logMap.put(LogConstants.LOG_COLUMN_COOKIE, lineSplits[12]);
+        logMap.put(LogConstants.LOG_COLUMN_REFERER, lineSplits[13]);
+        logMap.put(LogConstants.LOG_COLUMN_DCSID, lineSplits[14]);
         return logMap;
     }
 
     private static void handleQuery(Map<String, String> logMap, String query) {
-        String[] uriQuerys = StringUtils.split(query, SDCLogConstants.QUERY_SEPARTIOR);
+        String[] uriQuerys = StringUtils.split(query, LogConstants.QUERY_SEPARTIOR);
         for (String uriQuery : uriQuerys) {
             String[] uriitems = StringUtils.split(uriQuery, "=");
             if (uriitems.length == 2) {
@@ -53,20 +67,19 @@ public class LogParserUtil {
     private static void handleUA(Map<String, String> logMap, String usString) {
         if (StringUtils.isNotBlank(usString)) {
             UserAgent userAgent = UserAgent.parseUserAgentString(usString);
-            logMap.put(SDCLogConstants.LOG_COLUMN_NAME_OS_NAME, userAgent.getOperatingSystem().getName());
-            logMap.put(SDCLogConstants.LOG_COLUMN_NAME_BROWSER_NAME, userAgent.getBrowser().getName());
+            logMap.put(LogConstants.UA_OS_NAME, userAgent.getOperatingSystem().getName());
+            logMap.put(LogConstants.UA_BROWSER_NAME, userAgent.getBrowser().getName());
         }
     }
 
     private static void handleIP(Map<String, String> logMap, String ip) {
         if (StringUtils.isNotBlank(ip) && ip.length() > 8) {
-            IPSeekerExt.RegionInfo info = ipSeekerExt.analyticIp(ip);
-            if (null!=info) {
-                logMap.put(SDCLogConstants.LOG_COLUMN_NAME_COUNTRY, info.getCountry());
-                logMap.put(SDCLogConstants.LOG_COLUMN_NAME_PROVINCE, info.getProvince());
-                logMap.put(SDCLogConstants.LOG_COLUMN_NAME_CITY, info.getCity());
-            }
+            String[] regioninfo = IPv4Handler.getArea(ip);
+            logMap.put(LogConstants.REGION_PROVINCE, regioninfo[0]);
+            logMap.put(LogConstants.REGION_CITY, regioninfo[1]);
+            logMap.put(LogConstants.LOG_COLUMN_IPCODE, IPv4Handler.getIPcode(ip));
         }
     }
-
 }
+
+
