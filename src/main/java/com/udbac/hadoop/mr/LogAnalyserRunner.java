@@ -25,8 +25,6 @@ public class LogAnalyserRunner {
         try {
             Configuration conf = new Configuration();
             conf.set("fs.defaultFS", "hdfs://192.168.4.2:8022");
-//            conf.addResource(LogAnalyserRunner.class.getResourceAsStream("/conf.xml"));
-
             String inputArgs[] = new GenericOptionsParser(conf, args).getRemainingArgs();
             if (inputArgs.length != 2) {
                 System.err.println("\"Usage:<inputPath><outputPath>/n\"");
@@ -34,17 +32,14 @@ public class LogAnalyserRunner {
             }
             String inputPath = inputArgs[0];
             String outputPath = inputArgs[1];
-//        String ipPath = inputArgs[2];
 
             Job job1 = Job.getInstance(conf, "LogAnalyser");
             TextInputFormat.addInputPath(job1, new Path(inputPath));
             TextOutputFormat.setOutputPath(job1, new Path(outputPath));
+            TextOutputFormat.setCompressOutput(job1,true);
             job1.setJarByClass(LogAnalyserRunner.class);
             job1.setMapperClass(LogAnalyserMapper.class);
-
             job1.setMapOutputKeyClass(NullWritable.class);
-//        job1.addCacheFile(new URI(ipPath + "/udbacIPtransArea.csv"));
-//        job1.addCacheFile(new URI(ipPath + "/udbacIPtransSegs.csv"));
 
             if(job1.waitForCompletion(true)){
                 System.out.println("job执行成功");
