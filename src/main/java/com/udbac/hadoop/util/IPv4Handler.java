@@ -26,7 +26,7 @@ public class IPv4Handler {
 
             List<String> readSeges = FileUtils.readLines(new File(getFileSeges));
             for (String oneline : readSeges) {
-                String[] strings = oneline.split(LogConstants.IPCSV_SEPARTIOR);
+                String[] strings = oneline.split(LogConstants.SEPARTIOR_TAB);
                 Integer startIPInt = IPv4Util.ipToInt(strings[0]);
                 mapSegs.put(startIPInt,strings[2]);
                 sortedList.add(startIPInt);
@@ -38,12 +38,12 @@ public class IPv4Handler {
 
             List<String> readAreas = FileUtils.readLines(new File(getFileAreas));
             for (String oneline : readAreas) {
-                String[] strings = oneline.split(LogConstants.IPCSV_SEPARTIOR);
+                String[] strings = oneline.split(LogConstants.SEPARTIOR_TAB);
                 mapArea.put(strings[2], strings);
             }
         } catch (IOException e) {
-            System.out.println("read ip csv files error");
             e.printStackTrace();
+            throw new RuntimeException("read ip csv files failed");
         }
     }
 

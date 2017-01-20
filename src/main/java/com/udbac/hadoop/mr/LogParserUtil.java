@@ -6,7 +6,6 @@ import com.udbac.hadoop.util.SplitValueBuilder;
 import com.udbac.hadoop.util.TimeUtil;
 import eu.bitwalker.useragentutils.UserAgent;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -17,17 +16,27 @@ import java.util.Map;
  * Created by root on 2017/1/5.
  */
 public class LogParserUtil {
-    private final static Logger logger = Logger.getLogger(LogParserUtil.class);
 
-    public static String handleLog(String[] tokens, String[] keys) {
+    public static String handleLog(String[] lineSplits, String[] fields) {
         SplitValueBuilder svb = new SplitValueBuilder();
-        for (String key : keys) {
-            svb.add(handleLogMap(tokens).get(key));
+        Map<String, String> allfields = handleLogMap(lineSplits);
+        for (String field : fields) {
+            if (field.contains("?")) {
+                String[] fiesplits = StringUtils.split(field, "?");
+                for (String fiesplit : fiesplits) {
+                    if (StringUtils.isNotBlank(allfields.get(fiesplit))) {
+                        svb.add(allfields.get(fiesplit));
+                        break;
+                    }
+                }
+            }else{
+                svb.add(allfields.get(field));
+            }
         }
         return svb.toString();
     }
 
-    public static Map<String, String> handleLogMap(String[] lineSplits) {
+    private static Map<String, String> handleLogMap(String[] lineSplits) {
         Map<String, String> logMap = new HashMap<>();
         String date_time = TimeUtil.handleTime(lineSplits[0] +" "+ lineSplits[1]);
         logMap.put(LogConstants.LOG_COLUMN_DATETIME, date_time);
@@ -49,15 +58,16 @@ public class LogParserUtil {
     }
 
     private static void handleQuery(Map<String, String> logMap, String query) {
-        String[] uriQuerys = StringUtils.split(query, LogConstants.QUERY_SEPARTIOR);
+        String[] uriQuerys = StringUtils.split(query, LogConstants.SEPARATOR_AND);
         for (String uriQuery : uriQuerys) {
-            String[] uriitems = StringUtils.split(uriQuery, "=");
+            String[] uriitems = StringUtils.split(uriQuery, LogConstants.SEPARTIOR_EQUAL);
             if (uriitems.length == 2) {
-                try {
-                    uriitems[1] = URLDecoder.decode(uriitems[1], "UTF-8");
-                } catch (UnsupportedEncodingException e) {
-                    logger.error("url解析异常" + e);
-                    e.printStackTrace();
+                if (uriitems[1].contains("%")) {
+                        try {
+                            uriitems[1] = URLDecoder.decode(uriitems[1],"UTF-8");
+                        } catch (UnsupportedEncodingException | IllegalArgumentException e) {
+                            System.out.println("URLDecoder parse error");
+                        }
                 }
                 logMap.put(uriitems[0], uriitems[1]);
             }

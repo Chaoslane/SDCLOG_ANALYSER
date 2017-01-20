@@ -7,19 +7,19 @@ public class LogConstants {
     /**
      * 默认分隔符
      */
-    public static final String LOG_SEPARTIOR = " ";
+    public static final String SEPARTIOR_SPACE= " ";
     /**
      * 默认分隔符
      */
-    public static final String QUERY_SEPARTIOR = "&";
+    public static final String SEPARATOR_AND = "&";
     /**
      * 默认分隔符
      */
-    public static final String QUERY_ITEM_SEPARTIOR = "=";
+    public static final String SEPARTIOR_EQUAL = "=";
     /**
      * 默认分隔符
      */
-    public static final String IPCSV_SEPARTIOR = "\t";
+    public static final String SEPARTIOR_TAB = "\t";
     /**
      * 默认值
      */
@@ -93,6 +93,9 @@ public class LogConstants {
      */
     public static final String LOG_COLUMN_REFERER = "cs_referer";
 
-    public static final String LOG_COLUMN_DCSID = "dcs_id";
+    public static final String LOG_COLUMN_DCSID = "dcsid";
 
+    public enum MyCounters {
+        LINECOUNTER
+    }
 }
