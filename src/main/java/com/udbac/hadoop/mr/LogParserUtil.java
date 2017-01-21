@@ -21,24 +21,36 @@ public class LogParserUtil {
         SplitValueBuilder svb = new SplitValueBuilder();
         Map<String, String> allfields = handleLogMap(lineSplits);
         for (String field : fields) {
-            if (field.contains("?")) {
+            String muiltFeild = null;
+            String like = null;
+            if (field.contains(":")) {
+                String[] muiltFeildAndLike = StringUtils.split(field, ":");
+                muiltFeild = muiltFeildAndLike[0];
+                like = muiltFeildAndLike[1];
+                field = muiltFeild;
+            }
+            if (StringUtils.isNotBlank(field) && field.contains("?")) {
                 String[] fiesplits = StringUtils.split(field, "?");
                 for (String fiesplit : fiesplits) {
                     if (StringUtils.isNotBlank(allfields.get(fiesplit))) {
-                        svb.add(allfields.get(fiesplit));
+                        field = fiesplit;
                         break;
                     }
                 }
-            }else{
-                svb.add(allfields.get(field));
             }
+            if (StringUtils.isNotBlank(like)) {
+                if (StringUtils.isBlank(allfields.get(field)) || !allfields.get(field).contains(like)) {
+                    return null;
+                }
+            }
+            svb.add(allfields.get(field));
         }
         return svb.toString();
     }
 
     private static Map<String, String> handleLogMap(String[] lineSplits) {
         Map<String, String> logMap = new HashMap<>();
-        String date_time = TimeUtil.handleTime(lineSplits[0] +" "+ lineSplits[1]);
+        String date_time = TimeUtil.handleTime(lineSplits[0] + " " + lineSplits[1]);
         logMap.put(LogConstants.LOG_COLUMN_DATETIME, date_time);
         logMap.put(LogConstants.LOG_COLUMN_IP, lineSplits[2]);
         handleIP(logMap, lineSplits[2]);
@@ -63,11 +75,11 @@ public class LogParserUtil {
             String[] uriitems = StringUtils.split(uriQuery, LogConstants.SEPARTIOR_EQUAL);
             if (uriitems.length == 2) {
                 if (uriitems[1].contains("%")) {
-                        try {
-                            uriitems[1] = URLDecoder.decode(uriitems[1],"UTF-8");
-                        } catch (UnsupportedEncodingException | IllegalArgumentException e) {
-                            System.out.println("URLDecoder parse error");
-                        }
+                    try {
+                        uriitems[1] = URLDecoder.decode(uriitems[1], "UTF-8");
+                    } catch (UnsupportedEncodingException | IllegalArgumentException e) {
+                        System.out.println("URLDecoder parse error");
+                    }
                 }
                 logMap.put(uriitems[0], uriitems[1]);
             }

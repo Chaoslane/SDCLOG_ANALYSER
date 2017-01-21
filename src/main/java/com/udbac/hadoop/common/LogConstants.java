@@ -96,6 +96,7 @@ public class LogConstants {
     public static final String LOG_COLUMN_DCSID = "dcsid";
 
     public enum MyCounters {
-        LINECOUNTER
+        ALLLINECOUNTER,
+        FILTERCOUNTS
     }
 }

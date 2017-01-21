@@ -23,22 +23,25 @@ import java.io.IOException;
 public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, Text> {
     private String fields = null;
 
-    protected void setup(Context context){
+    protected void setup(Context context) {
         Configuration configuration = context.getConfiguration();
         fields = configuration.get("fields");
     }
 
-    protected void map(LongWritable key, Text value, Context context){
+    protected void map(LongWritable key, Text value, Context context) {
         try {
             String[] logTokens = StringUtils.split(value.toString(), LogConstants.SEPARTIOR_SPACE);
             if (!StringUtils.isNotBlank(fields)) {
                 throw new RuntimeException("fields is null");
             }
-            if (logTokens.length == 15){
-                String sdcLog = LogParserUtil.handleLog(logTokens, fields.split(","));
-                context.write(NullWritable.get(), new Text(sdcLog));
-                context.getCounter(LogConstants.MyCounters.LINECOUNTER).increment(1);
+            if (StringUtils.isBlank(value.toString()) || logTokens.length != 15) {
+                return;
             }
+            String sdcLog = LogParserUtil.handleLog(logTokens, fields.split(","));
+            if (StringUtils.isBlank(sdcLog)){
+                return;
+            }
+            context.write(NullWritable.get(), new Text(sdcLog));
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
@@ -48,7 +51,7 @@ public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, 
     public static void main(String[] args) {
         try {
             Configuration conf = new Configuration();
-//            conf.set("fs.defaultFS", "local");
+            conf.set("fs.defaultFS", "local");
 //            conf.set("fs.defaultFS", "hdfs://192.168.4.2:8022");
             String inputArgs[] = new GenericOptionsParser(conf, args).getRemainingArgs();
             if (inputArgs.length != 2) {
@@ -61,15 +64,19 @@ public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, 
             Job job1 = Job.getInstance(conf, "LogAnalyser");
             TextInputFormat.addInputPath(job1, new Path(inputPath));
             TextOutputFormat.setOutputPath(job1, new Path(outputPath));
-            LazyOutputFormat.setOutputFormatClass(job1,TextOutputFormat.class);
+            LazyOutputFormat.setOutputFormatClass(job1, TextOutputFormat.class);
             TextOutputFormat.setOutputCompressorClass(job1, GzipCodec.class);
             job1.setJarByClass(LogAnalyserMapper.class);
             job1.setMapperClass(LogAnalyserMapper.class);
             job1.setMapOutputKeyClass(NullWritable.class);
-            if(job1.waitForCompletion(true)){
+            if (job1.waitForCompletion(true)) {
                 System.out.println("-----job succeed-----");
-                System.out.println("-----lines count-----:"+
-                        job1.getCounters().findCounter(LogConstants.MyCounters.LINECOUNTER).getValue());
+                System.out.println("-----alllines count-----:" +
+                        job1.getCounters().findCounter(LogConstants.MyCounters.ALLLINECOUNTER).getValue());
+                System.out.println("-----filter count-----:" +
+                        job1.getCounters().findCounter(LogConstants.MyCounters.ALLLINECOUNTER).getValue());
+            } else {
+                System.exit(1);
             }
         } catch (IOException | InterruptedException | ClassNotFoundException e) {
             e.printStackTrace();
