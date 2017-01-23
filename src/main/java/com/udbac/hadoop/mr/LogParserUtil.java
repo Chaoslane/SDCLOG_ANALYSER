@@ -17,20 +17,19 @@ import java.util.Map;
  */
 public class LogParserUtil {
 
+    /**
+     * fields 插码字段可能为多个，比如WT.mobile或mobile 用?进行分隔
+     *
+     * @param lineSplits 切割后的日志数组
+     * @param fields     切割后的fileds数组
+     * @return 返回最终的清洗结果
+     */
     public static String handleLog(String[] lineSplits, String[] fields) {
-        SplitValueBuilder svb = new SplitValueBuilder();
+        SplitValueBuilder svb = new SplitValueBuilder(LogConstants.SEPARTIOR_TAB);
         Map<String, String> allfields = handleLogMap(lineSplits);
         for (String field : fields) {
-            String muiltFeild = null;
-            String like = null;
-            if (field.contains(":")) {
-                String[] muiltFeildAndLike = StringUtils.split(field, ":");
-                muiltFeild = muiltFeildAndLike[0];
-                like = muiltFeildAndLike[1];
-                field = muiltFeild;
-            }
-            if (StringUtils.isNotBlank(field) && field.contains("?")) {
-                String[] fiesplits = StringUtils.split(field, "?");
+            if (field.contains(LogConstants.SEPARTIOR_QUES)) {
+                String[] fiesplits = StringUtils.split(field, LogConstants.SEPARTIOR_QUES);
                 for (String fiesplit : fiesplits) {
                     if (StringUtils.isNotBlank(allfields.get(fiesplit))) {
                         field = fiesplit;
@@ -38,16 +37,17 @@ public class LogParserUtil {
                     }
                 }
             }
-            if (StringUtils.isNotBlank(like)) {
-                if (StringUtils.isBlank(allfields.get(field)) || !allfields.get(field).contains(like)) {
-                    return null;
-                }
-            }
             svb.add(allfields.get(field));
         }
         return svb.toString();
     }
 
+    /**
+     * 处理所有日志数组进行解析后，放入一个hashmap
+     *
+     * @param lineSplits 日志数组
+     * @return 返回全量的日志信息
+     */
     private static Map<String, String> handleLogMap(String[] lineSplits) {
         Map<String, String> logMap = new HashMap<>();
         String date_time = TimeUtil.handleTime(lineSplits[0] + " " + lineSplits[1]);
@@ -78,7 +78,7 @@ public class LogParserUtil {
                     try {
                         uriitems[1] = URLDecoder.decode(uriitems[1], "UTF-8");
                     } catch (UnsupportedEncodingException | IllegalArgumentException e) {
-                        System.out.println("URLDecoder parse error");
+                        System.out.println("URLDecoder parse error~! uricode:" + uriitems[1]);
                     }
                 }
                 logMap.put(uriitems[0], uriitems[1]);

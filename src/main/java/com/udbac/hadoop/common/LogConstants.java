@@ -21,6 +21,14 @@ public class LogConstants {
      */
     public static final String SEPARTIOR_TAB = "\t";
     /**
+     * field分隔符
+     */
+    public static final String SEPARTIOR_COMMA= ",";
+    /**
+     * field分隔符
+     */
+    public static final String SEPARTIOR_QUES = "?";
+    /**
      * 默认值
      */
     public static final String DEFAULT_VALUE = "unknown";
@@ -96,7 +104,6 @@ public class LogConstants {
     public static final String LOG_COLUMN_DCSID = "dcsid";
 
     public enum MyCounters {
-        ALLLINECOUNTER,
-        FILTERCOUNTS
+        ALLLINECOUNTER
     }
 }

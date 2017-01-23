@@ -4,6 +4,7 @@ package com.udbac.hadoop.util;
  * Created by root on 2017/1/16.
  */
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 public class IPv4Util {
 
@@ -13,12 +14,8 @@ public class IPv4Util {
      * @param ipAddr
      * @return byte[]
      */
-    public static byte[] ipToBytesByInet(String ipAddr) {
-        try {
-            return InetAddress.getByName(ipAddr).getAddress();
-        } catch (Exception e) {
-            throw new IllegalArgumentException(ipAddr + " is invalid IP");
-        }
+    public static byte[] ipToBytesByInet(String ipAddr) throws UnknownHostException {
+        return InetAddress.getByName(ipAddr).getAddress();
     }
 
     /**
@@ -73,8 +70,9 @@ public class IPv4Util {
     public static int ipToInt(String ipAddr) {
         try {
             return bytesToInt(ipToBytesByInet(ipAddr));
-        } catch (Exception e) {
-            throw new IllegalArgumentException(ipAddr + " is invalid IP");
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+            return 1000000000;
         }
     }
 

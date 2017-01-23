@@ -14,6 +14,7 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
+import org.apache.hadoop.yarn.webapp.example.MyApp;
 
 import java.io.IOException;
 
@@ -21,31 +22,32 @@ import java.io.IOException;
  * Created by root on 2017/1/10.
  */
 public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, Text> {
-    private String fields = null;
+    private static String fields = null;
 
     protected void setup(Context context) {
         Configuration configuration = context.getConfiguration();
         fields = configuration.get("fields");
+        if (StringUtils.isBlank(fields)) {
+            throw new RuntimeException("fields is null");
+        }
     }
 
     protected void map(LongWritable key, Text value, Context context) {
         try {
             String[] logTokens = StringUtils.split(value.toString(), LogConstants.SEPARTIOR_SPACE);
-            if (!StringUtils.isNotBlank(fields)) {
-                throw new RuntimeException("fields is null");
-            }
+            //判断日志格式是否正确
             if (StringUtils.isBlank(value.toString()) || logTokens.length != 15) {
                 return;
             }
-            String sdcLog = LogParserUtil.handleLog(logTokens, fields.split(","));
-            if (StringUtils.isBlank(sdcLog)){
-                return;
+            //传入 -Dfields 参数取指定字段
+            String sdcLog = LogParserUtil.handleLog(logTokens, fields.split(LogConstants.SEPARTIOR_COMMA));
+            if (StringUtils.isNotBlank(sdcLog)) {
+                context.getCounter(LogConstants.MyCounters.ALLLINECOUNTER).increment(1);
+                context.write(NullWritable.get(), new Text(sdcLog));
             }
-            context.write(NullWritable.get(), new Text(sdcLog));
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
-
     }
 
     public static void main(String[] args) {
@@ -73,14 +75,12 @@ public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, 
                 System.out.println("-----job succeed-----");
                 System.out.println("-----alllines count-----:" +
                         job1.getCounters().findCounter(LogConstants.MyCounters.ALLLINECOUNTER).getValue());
-                System.out.println("-----filter count-----:" +
-                        job1.getCounters().findCounter(LogConstants.MyCounters.ALLLINECOUNTER).getValue());
             } else {
                 System.exit(1);
             }
         } catch (IOException | InterruptedException | ClassNotFoundException e) {
             e.printStackTrace();
-            throw new RuntimeException("job failed");
+            throw new RuntimeException("*****job failed*****");
         }
     }
 }
