@@ -98,8 +98,11 @@ public class LogConstants {
     /**
      * 浏览器版本
      */
-    public static final String UA_BROWSER_NAME_VERSION = "browser_v";
-
+    public static final String UA_BROWSER_VERSION = "browser_v";
+    /**
+     * 浏览器版本
+     */
+    public static final String UA_DEVICE = "device";
     /**
      * 客户端cookies内容，原生App采集中此数据为空。
      */

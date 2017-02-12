@@ -101,8 +101,8 @@ public class LogParserUtil {
             logMap.put(LogConstants.UA_OS_NAME, c.os.family);
             logMap.put(LogConstants.UA_OS_VERSION, c.os.major + "." + c.os.minor);
             logMap.put(LogConstants.UA_BROWSER_NAME, c.userAgent.family);
-            logMap.put(LogConstants.UA_BROWSER_NAME_VERSION, c.userAgent.major + "." + c.userAgent.minor);
-
+            logMap.put(LogConstants.UA_BROWSER_VERSION, c.userAgent.major + "." + c.userAgent.minor);
+            logMap.put(LogConstants.UA_DEVICE, c.device.family);
         }
     }
 

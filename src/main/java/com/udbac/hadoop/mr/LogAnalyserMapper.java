@@ -77,7 +77,7 @@ public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, 
                         job1.getCounters().findCounter(LogConstants.MyCounters.ALLLINECOUNTER).getValue());
             } else {
                 System.exit(1);
-            }
+        }
         } catch (IOException | InterruptedException | ClassNotFoundException e) {
             e.printStackTrace();
             throw new RuntimeException("*****job failed*****");
