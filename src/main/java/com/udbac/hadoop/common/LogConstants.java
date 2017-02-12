@@ -88,9 +88,17 @@ public class LogConstants {
      */
     public static final String UA_OS_NAME = "os";
     /**
+     * 操作系统版本
+     */
+    public static final String UA_OS_VERSION = "os_v";
+    /**
      * 浏览器名称
      */
     public static final String UA_BROWSER_NAME = "browser";
+    /**
+     * 浏览器版本
+     */
+    public static final String UA_BROWSER_NAME_VERSION = "browser_v";
 
     /**
      * 客户端cookies内容，原生App采集中此数据为空。

@@ -22,12 +22,12 @@ import java.io.IOException;
  * Created by root on 2017/1/10.
  */
 public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, Text> {
-    private static String fields = null;
+    private static String[] fields = null;
 
-    protected void setup(Context context) {
+    protected void setup(Context context) throws IOException, InterruptedException{
         Configuration configuration = context.getConfiguration();
-        fields = configuration.get("fields");
-        if (StringUtils.isBlank(fields)) {
+        fields = StringUtils.split(configuration.get("fields").trim(),LogConstants.SEPARTIOR_COMMA);
+        if (fields.length == 0) {
             throw new RuntimeException("fields is null");
         }
     }
@@ -40,7 +40,7 @@ public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, 
                 return;
             }
             //传入 -Dfields 参数取指定字段
-            String sdcLog = LogParserUtil.handleLog(logTokens, fields.split(LogConstants.SEPARTIOR_COMMA));
+            String sdcLog = LogParserUtil.handleLog(logTokens, fields);
             if (StringUtils.isNotBlank(sdcLog)) {
                 context.getCounter(LogConstants.MyCounters.ALLLINECOUNTER).increment(1);
                 context.write(NullWritable.get(), new Text(sdcLog));
@@ -53,11 +53,11 @@ public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, 
     public static void main(String[] args) {
         try {
             Configuration conf = new Configuration();
-            conf.set("fs.defaultFS", "local");
+//            conf.set("fs.defaultFS", "local");
 //            conf.set("fs.defaultFS", "hdfs://192.168.4.2:8022");
             String inputArgs[] = new GenericOptionsParser(conf, args).getRemainingArgs();
             if (inputArgs.length != 2) {
-                System.err.println("\"Usage:<inputPath><outputPath>/n\"");
+                System.err.println("\"Usage:<-Dfields=[field1?field2]> <inputPath> <outputPath>/n\"");
                 System.exit(2);
             }
             String inputPath = inputArgs[0];

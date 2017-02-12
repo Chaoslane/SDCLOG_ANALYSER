@@ -4,9 +4,11 @@ import com.udbac.hadoop.common.LogConstants;
 import com.udbac.hadoop.util.IPv4Handler;
 import com.udbac.hadoop.util.SplitValueBuilder;
 import com.udbac.hadoop.util.TimeUtil;
-import eu.bitwalker.useragentutils.UserAgent;
 import org.apache.commons.lang.StringUtils;
+import ua_parser.Parser;
+import ua_parser.Client;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.HashMap;
@@ -16,7 +18,14 @@ import java.util.Map;
  * Created by root on 2017/1/5.
  */
 public class LogParserUtil {
-
+    private static Parser uapaser;
+    static {
+        try {
+            uapaser = new Parser();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     /**
      * fields 插码字段可能为多个，比如WT.mobile或mobile 用?进行分隔
      *
@@ -24,7 +33,7 @@ public class LogParserUtil {
      * @param fields     切割后的fileds数组
      * @return 返回最终的清洗结果
      */
-    public static String handleLog(String[] lineSplits, String[] fields) {
+    public static String handleLog(String[] lineSplits, String[] fields) throws IOException {
         SplitValueBuilder svb = new SplitValueBuilder(LogConstants.SEPARTIOR_TAB);
         Map<String, String> allfields = handleLogMap(lineSplits);
         for (String field : fields) {
@@ -48,7 +57,7 @@ public class LogParserUtil {
      * @param lineSplits 日志数组
      * @return 返回全量的日志信息
      */
-    private static Map<String, String> handleLogMap(String[] lineSplits) {
+    private static Map<String, String> handleLogMap(String[] lineSplits) throws IOException {
         Map<String, String> logMap = new HashMap<>();
         String date_time = TimeUtil.handleTime(lineSplits[0] + " " + lineSplits[1]);
         logMap.put(LogConstants.LOG_COLUMN_DATETIME, date_time);
@@ -86,11 +95,14 @@ public class LogParserUtil {
         }
     }
 
-    private static void handleUA(Map<String, String> logMap, String usString) {
-        if (StringUtils.isNotBlank(usString)) {
-            UserAgent userAgent = UserAgent.parseUserAgentString(usString);
-            logMap.put(LogConstants.UA_OS_NAME, userAgent.getOperatingSystem().getName());
-            logMap.put(LogConstants.UA_BROWSER_NAME, userAgent.getBrowser().getName());
+    private static void handleUA(Map<String, String> logMap, String uaString) throws IOException {
+        if (StringUtils.isNotBlank(uaString)) {
+            Client c = uapaser.parse(uaString);
+            logMap.put(LogConstants.UA_OS_NAME, c.os.family);
+            logMap.put(LogConstants.UA_OS_VERSION, c.os.major + "." + c.os.minor);
+            logMap.put(LogConstants.UA_BROWSER_NAME, c.userAgent.family);
+            logMap.put(LogConstants.UA_BROWSER_NAME_VERSION, c.userAgent.major + "." + c.userAgent.minor);
+
         }
     }
 
