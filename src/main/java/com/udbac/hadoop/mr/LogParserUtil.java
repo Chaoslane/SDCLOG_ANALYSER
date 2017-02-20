@@ -19,13 +19,17 @@ import java.util.Map;
  */
 public class LogParserUtil {
     private static Parser uapaser;
+    private static IPv4Handler iPv4Handler;
+
     static {
         try {
             uapaser = new Parser();
+            iPv4Handler = new IPv4Handler();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
     /**
      * fields 插码字段可能为多个，比如WT.mobile或mobile 用?进行分隔
      *
@@ -34,8 +38,9 @@ public class LogParserUtil {
      * @return 返回最终的清洗结果
      */
     public static String handleLog(String[] lineSplits, String[] fields) throws IOException {
-        SplitValueBuilder svb = new SplitValueBuilder(LogConstants.SEPARTIOR_TAB);
         Map<String, String> allfields = handleLogMap(lineSplits);
+
+        SplitValueBuilder svb = new SplitValueBuilder(LogConstants.SEPARTIOR_TAB);
         for (String field : fields) {
             if (field.contains(LogConstants.SEPARTIOR_QUES)) {
                 String[] fiesplits = StringUtils.split(field, LogConstants.SEPARTIOR_QUES);
@@ -71,7 +76,7 @@ public class LogParserUtil {
         logMap.put(LogConstants.LOG_COLUMN_STATUS, lineSplits[8]);
         logMap.put(LogConstants.LOG_COLUMN_BYTES, lineSplits[9]);
         logMap.put(LogConstants.LOG_COLUMN_VERSION, lineSplits[10]);
-        handleUA(logMap, lineSplits[11]);
+//        handleUA(logMap, lineSplits[11]);
         logMap.put(LogConstants.LOG_COLUMN_COOKIE, lineSplits[12]);
         logMap.put(LogConstants.LOG_COLUMN_REFERER, lineSplits[13]);
         logMap.put(LogConstants.LOG_COLUMN_DCSID, lineSplits[14]);
@@ -87,7 +92,15 @@ public class LogParserUtil {
                     try {
                         uriitems[1] = URLDecoder.decode(uriitems[1], "UTF-8");
                     } catch (UnsupportedEncodingException | IllegalArgumentException e) {
-                        System.out.println("URLDecoder parse error~! uricode:" + uriitems[1]);
+                        try {
+                            if (uriitems[1].endsWith("%")) {
+                                uriitems[1] = URLDecoder.decode(uriitems[1].substring(0, uriitems[1].length() - 1), "UTF-8");
+                            } else if (uriitems[1].length() - uriitems[1].lastIndexOf("%") == 2) {
+                                uriitems[1] = URLDecoder.decode(uriitems[1].substring(0, uriitems[1].length() - 2), "UTF-8");
+                            }
+                        } catch (UnsupportedEncodingException |IllegalArgumentException e1) {
+                            System.out.println("URLDecoder parse error~! uricode:" + uriitems[1]);
+                        }
                     }
                 }
                 logMap.put(uriitems[0], uriitems[1]);
@@ -95,25 +108,26 @@ public class LogParserUtil {
         }
     }
 
+    private static void handleIP(Map<String, String> logMap, String ip) {
+        if (StringUtils.isNotBlank(ip) && ip.length() > 8) {
+            String[] regioninfo = iPv4Handler.getArea(ip);
+            logMap.put(LogConstants.REGION_PROVINCE, regioninfo[0]);
+            logMap.put(LogConstants.REGION_CITY, regioninfo[1]);
+            logMap.put(LogConstants.LOG_COLUMN_IPCODE, iPv4Handler.getIPcode(ip));
+        }
+    }
+
     private static void handleUA(Map<String, String> logMap, String uaString) throws IOException {
         if (StringUtils.isNotBlank(uaString)) {
             Client c = uapaser.parse(uaString);
-            logMap.put(LogConstants.UA_OS_NAME, c.os.family);
-            logMap.put(LogConstants.UA_OS_VERSION, c.os.major + "." + c.os.minor);
-            logMap.put(LogConstants.UA_BROWSER_NAME, c.userAgent.family);
-            logMap.put(LogConstants.UA_BROWSER_VERSION, c.userAgent.major + "." + c.userAgent.minor);
+            logMap.put(LogConstants.UA_OS_NAME, c.os.family + " "
+                    + (StringUtils.isNotBlank(c.os.major) && StringUtils.isNotBlank(c.os.minor) ? c.os.major + "." + c.os.minor : ""));
+            logMap.put(LogConstants.UA_BROWSER_NAME, c.userAgent.family + " "
+                    + (StringUtils.isNotBlank(c.userAgent.major) && StringUtils.isNotBlank(c.userAgent.minor) ? c.userAgent.major + "." + c.userAgent.minor : ""));
             logMap.put(LogConstants.UA_DEVICE, c.device.family);
         }
     }
 
-    private static void handleIP(Map<String, String> logMap, String ip) {
-        if (StringUtils.isNotBlank(ip) && ip.length() > 8) {
-            String[] regioninfo = IPv4Handler.getArea(ip);
-            logMap.put(LogConstants.REGION_PROVINCE, regioninfo[0]);
-            logMap.put(LogConstants.REGION_CITY, regioninfo[1]);
-            logMap.put(LogConstants.LOG_COLUMN_IPCODE, IPv4Handler.getIPcode(ip));
-        }
-    }
 }
 
 

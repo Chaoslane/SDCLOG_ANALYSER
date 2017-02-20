@@ -5,9 +5,11 @@ package com.udbac.hadoop.util;
  */
 import com.udbac.hadoop.common.LogConstants;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 
 /**
@@ -15,38 +17,40 @@ import java.util.*;
  * IP解析为地域名称
  */
 public class IPv4Handler {
+    private static final String udbacIPtransSegs = "/udbacIPtransSegs.csv";
+    private static final String udbacIPtransArea = "/udbacIPtransArea.csv";
     private static List<Integer> sortedList;
     private static Map<Integer, String> mapSegs ;
     private static Map<String, String[]> mapArea ;
-    static {
-        try {
-            mapSegs = new HashMap<>();
-            String getFileSeges = IPv4Handler.class.getResource("/udbacIPtransSegs.csv").getFile();
-            sortedList = new ArrayList<>();
 
-            List<String> readSeges = FileUtils.readLines(new File(getFileSeges));
-            for (String oneline : readSeges) {
-                String[] strings = oneline.split(LogConstants.SEPARTIOR_TAB);
-                Integer startIPInt = IPv4Util.ipToInt(strings[0]);
-                mapSegs.put(startIPInt,strings[2]);
-                sortedList.add(startIPInt);
-            }
-            sortedList.sort(Comparator.naturalOrder());
-
-            mapArea = new HashMap<>();
-            String getFileAreas = IPv4Handler.class.getResource("/udbacIPtransArea.csv").getFile();
-
-            List<String> readAreas = FileUtils.readLines(new File(getFileAreas));
-            for (String oneline : readAreas) {
-                String[] strings = oneline.split(LogConstants.SEPARTIOR_TAB);
-                mapArea.put(strings[2], strings);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException("read ip csv files failed");
-        }
+    public IPv4Handler() throws IOException {
+        this(IPv4Handler.class.getResourceAsStream(udbacIPtransSegs),
+                IPv4Handler.class.getResourceAsStream(udbacIPtransArea));
     }
 
+    public IPv4Handler(InputStream udbacSegsInputStream , InputStream udbacAreaInputStream) throws IOException {
+        this.initialize(udbacSegsInputStream,udbacAreaInputStream);
+    }
+
+    private void initialize(InputStream udbacSegsInputStream , InputStream udbacAreaInputStream) throws IOException {
+        mapSegs = new HashMap<>();
+        sortedList = new ArrayList<>();
+        List<String> readSeges = IOUtils.readLines(udbacSegsInputStream);
+        for (String oneline : readSeges) {
+            String[] strings = oneline.split(LogConstants.SEPARTIOR_TAB);
+            Integer startIPInt = IPv4Util.ipToInt(strings[0]);
+            mapSegs.put(startIPInt,strings[2]);
+            sortedList.add(startIPInt);
+        }
+        sortedList.sort(Comparator.naturalOrder());
+
+        mapArea = new HashMap<>();
+        List<String> readAreas = IOUtils.readLines(udbacAreaInputStream);
+        for (String oneline : readAreas) {
+            String[] strings = oneline.split(LogConstants.SEPARTIOR_TAB);
+            mapArea.put(strings[2], strings);
+        }
+    }
 
     /**
      * 解析为 province,city
@@ -54,7 +58,7 @@ public class IPv4Handler {
      * @return  province,city
      * @throws IOException
      */
-    public static String[] getArea(String logIP){
+    public String[] getArea(String logIP){
         return mapArea.get(getIPcode(logIP));
     }
 
@@ -64,7 +68,7 @@ public class IPv4Handler {
      * @return IPcode
      * @throws IOException
      */
-    public static String getIPcode(String logIP){
+    public String getIPcode(String logIP){
         Integer index = searchIP(sortedList, IPv4Util.ipToInt(logIP));
         return mapSegs.get(sortedList.get(index));
     }
@@ -74,7 +78,7 @@ public class IPv4Handler {
      * @param ipInt ipToInt
      * @return index
      */
-    private static Integer searchIP(List<Integer> rangeList, Integer ipInt) {
+    private Integer searchIP(List<Integer> rangeList, Integer ipInt) {
         int mid = rangeList.size() / 2;
         if (rangeList.get(mid) == ipInt) {
             return mid;

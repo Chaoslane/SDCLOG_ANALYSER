@@ -22,7 +22,7 @@ import java.io.IOException;
  * Created by root on 2017/1/10.
  */
 public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, Text> {
-    private static String[] fields = null;
+    private static String[] fields ;
 
     protected void setup(Context context) throws IOException, InterruptedException{
         Configuration configuration = context.getConfiguration();
@@ -77,7 +77,7 @@ public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, 
                         job1.getCounters().findCounter(LogConstants.MyCounters.ALLLINECOUNTER).getValue());
             } else {
                 System.exit(1);
-        }
+            }
         } catch (IOException | InterruptedException | ClassNotFoundException e) {
             e.printStackTrace();
             throw new RuntimeException("*****job failed*****");
