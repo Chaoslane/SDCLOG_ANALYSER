@@ -76,7 +76,7 @@ public class LogParserUtil {
         logMap.put(LogConstants.LOG_COLUMN_STATUS, lineSplits[8]);
         logMap.put(LogConstants.LOG_COLUMN_BYTES, lineSplits[9]);
         logMap.put(LogConstants.LOG_COLUMN_VERSION, lineSplits[10]);
-//        handleUA(logMap, lineSplits[11]);
+        logMap.put(LogConstants.LOG_COLUMN_VERSION, lineSplits[11]);
         logMap.put(LogConstants.LOG_COLUMN_COOKIE, lineSplits[12]);
         logMap.put(LogConstants.LOG_COLUMN_REFERER, lineSplits[13]);
         logMap.put(LogConstants.LOG_COLUMN_DCSID, lineSplits[14]);
@@ -113,21 +113,9 @@ public class LogParserUtil {
             String[] regioninfo = iPv4Handler.getArea(ip);
             logMap.put(LogConstants.REGION_PROVINCE, regioninfo[0]);
             logMap.put(LogConstants.REGION_CITY, regioninfo[1]);
-            logMap.put(LogConstants.LOG_COLUMN_IPCODE, iPv4Handler.getIPcode(ip));
+//            logMap.put(LogConstants.LOG_COLUMN_IPCODE, iPv4Handler.getIPcode(ip));
         }
     }
-
-    private static void handleUA(Map<String, String> logMap, String uaString) throws IOException {
-        if (StringUtils.isNotBlank(uaString)) {
-            Client c = uapaser.parse(uaString);
-            logMap.put(LogConstants.UA_OS_NAME, c.os.family + " "
-                    + (StringUtils.isNotBlank(c.os.major) && StringUtils.isNotBlank(c.os.minor) ? c.os.major + "." + c.os.minor : ""));
-            logMap.put(LogConstants.UA_BROWSER_NAME, c.userAgent.family + " "
-                    + (StringUtils.isNotBlank(c.userAgent.major) && StringUtils.isNotBlank(c.userAgent.minor) ? c.userAgent.major + "." + c.userAgent.minor : ""));
-            logMap.put(LogConstants.UA_DEVICE, c.device.family);
-        }
-    }
-
 }
 
 
