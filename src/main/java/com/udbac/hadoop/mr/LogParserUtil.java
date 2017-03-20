@@ -1,5 +1,6 @@
 package com.udbac.hadoop.mr;
 
+import com.google.gson.Gson;
 import com.udbac.hadoop.common.LogConstants;
 import com.udbac.hadoop.util.IPv4Handler;
 import com.udbac.hadoop.util.SplitValueBuilder;
@@ -11,6 +12,7 @@ import ua_parser.Client;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,92 +32,84 @@ public class LogParserUtil {
         }
     }
 
-    /**
-     * fields 插码字段可能为多个，比如WT.mobile或mobile 用?进行分隔
-     *
-     * @param lineSplits 切割后的日志数组
-     * @param fields     切割后的fileds数组
-     * @return 返回最终的清洗结果
-     */
-    public static String handleLog(String[] lineSplits, String[] fields) throws IOException {
-        Map<String, String> allfields = handleLogMap(lineSplits);
-
+    protected static String handleLog(String[] lineSplits,String fieldsLog) throws IOException {
         SplitValueBuilder svb = new SplitValueBuilder(LogConstants.SEPARTIOR_TAB);
-        for (String field : fields) {
-            if (field.contains(LogConstants.SEPARTIOR_QUES)) {
-                String[] fiesplits = StringUtils.split(field, LogConstants.SEPARTIOR_QUES);
-                for (String fiesplit : fiesplits) {
-                    if (StringUtils.isNotBlank(allfields.get(fiesplit))) {
-                        field = fiesplit;
-                        break;
-                    }
-                }
-            }
-            svb.add(allfields.get(field));
-        }
-        return svb.toString();
-    }
-
-    /**
-     * 处理所有日志数组进行解析后，放入一个hashmap
-     *
-     * @param lineSplits 日志数组
-     * @return 返回全量的日志信息
-     */
-    private static Map<String, String> handleLogMap(String[] lineSplits) throws IOException {
+        //hashmap中放入除了query外所有字段
         Map<String, String> logMap = new HashMap<>();
-        String date_time = TimeUtil.handleTime(lineSplits[0] + " " + lineSplits[1]);
+        String date_time = TimeUtil.handleTime(
+                lineSplits[0] + LogConstants.SEPARTIOR_SPACE + lineSplits[1]);
         logMap.put(LogConstants.LOG_COLUMN_DATETIME, date_time);
         logMap.put(LogConstants.LOG_COLUMN_IP, lineSplits[2]);
-        handleIP(logMap, lineSplits[2]);
+        logMap.put(LogConstants.LOG_COLUMN_REGION, iPv4Handler.getArea(lineSplits[2]));
         logMap.put(LogConstants.LOG_COLUMN_USERNAME, lineSplits[3]);
         logMap.put(LogConstants.LOG_COLUMN_HOST, lineSplits[4]);
         logMap.put(LogConstants.LOG_COLUMN_METHOD, lineSplits[5]);
         logMap.put(LogConstants.LOG_COLUMN_URISTEM, lineSplits[6]);
-        handleQuery(logMap, lineSplits[7]);
         logMap.put(LogConstants.LOG_COLUMN_STATUS, lineSplits[8]);
         logMap.put(LogConstants.LOG_COLUMN_BYTES, lineSplits[9]);
         logMap.put(LogConstants.LOG_COLUMN_VERSION, lineSplits[10]);
-        logMap.put(LogConstants.LOG_COLUMN_VERSION, lineSplits[11]);
+        logMap.put(LogConstants.LOG_COLUMN_USERAGENT, lineSplits[11]);
         logMap.put(LogConstants.LOG_COLUMN_COOKIE, lineSplits[12]);
         logMap.put(LogConstants.LOG_COLUMN_REFERER, lineSplits[13]);
         logMap.put(LogConstants.LOG_COLUMN_DCSID, lineSplits[14]);
-        return logMap;
+        //取得fieldsLog参数指定的字段
+        String[] fields = StringUtils.split(fieldsLog, LogConstants.SEPARTIOR_SPACE);
+        for (String field : fields) {
+            svb.add(logMap.get(field));
+        }
+        return svb.toString();
     }
 
-    private static void handleQuery(Map<String, String> logMap, String query) {
+    protected static String handleQuery(String[] lineSplits, String fieldsQuery) {
+        String query = lineSplits[7];
+        String key = null;
+        String value = null;
+        Map<String, String> queryMap = new HashMap<>();
         String[] uriQuerys = StringUtils.split(query, LogConstants.SEPARATOR_AND);
         for (String uriQuery : uriQuerys) {
             String[] uriitems = StringUtils.split(uriQuery, LogConstants.SEPARTIOR_EQUAL);
             if (uriitems.length == 2) {
-                if (uriitems[1].contains("%")) {
+                key = uriitems[0];
+                value = uriitems[1];
+                if (value.contains("%")) {
                     try {
-                        uriitems[1] = URLDecoder.decode(uriitems[1], "UTF-8");
+                        value = URLDecoder.decode(value, "UTF-8");
                     } catch (UnsupportedEncodingException | IllegalArgumentException e) {
-                        try {
-                            if (uriitems[1].endsWith("%")) {
-                                uriitems[1] = URLDecoder.decode(uriitems[1].substring(0, uriitems[1].length() - 1), "UTF-8");
-                            } else if (uriitems[1].length() - uriitems[1].lastIndexOf("%") == 2) {
-                                uriitems[1] = URLDecoder.decode(uriitems[1].substring(0, uriitems[1].length() - 2), "UTF-8");
-                            }
-                        } catch (UnsupportedEncodingException |IllegalArgumentException e1) {
-                            System.out.println("URLDecoder parse error~! uricode:" + uriitems[1]);
-                        }
+
                     }
                 }
-                logMap.put(uriitems[0], uriitems[1]);
+                queryMap.put(key, value);
             }
         }
+        //取得fieldsQuery参数指定的字段
+        String[] fields = StringUtils.split(fieldsQuery, LogConstants.SEPARTIOR_COMMA);
+        Map<String, String> selectedQuery = new HashMap<>();
+        for (String field : fields) {
+            if (field.contains(LogConstants.SEPARTIOR_QUES)) {
+                String[] fiesplits = StringUtils.split(field, LogConstants.SEPARTIOR_QUES);
+                for (String fiesplit : fiesplits) {
+                    if (StringUtils.isNotBlank(queryMap.get(fiesplit))) {
+                        selectedQuery.put(fiesplit, queryMap.get(fiesplit));
+                        break;
+                    }
+                }
+            }else {
+                selectedQuery.put(field, queryMap.get(field));
+            }
+        }
+        Gson gson = new Gson();
+        return gson.toJson(selectedQuery);
+//                        try {
+//                            if (uriitems[1].endsWith("%")) {
+//                                uriitems[1] = URLDecoder.decode(uriitems[1].substring(0, uriitems[1].length() - 1), "UTF-8");
+//                            } else if (uriitems[1].length() - uriitems[1].lastIndexOf("%") == 2) {
+//                                uriitems[1] = URLDecoder.decode(uriitems[1].substring(0, uriitems[1].length() - 2), "UTF-8");
+//                            }
+//                        } catch (UnsupportedEncodingException |IllegalArgumentException e1) {
+//                            System.out.println("URLDecoder parse error~! uricode:" + uriitems[1]);
+//                        }
     }
 
-    private static void handleIP(Map<String, String> logMap, String ip) {
-        if (StringUtils.isNotBlank(ip) && ip.length() > 8) {
-            String[] regioninfo = iPv4Handler.getArea(ip);
-            logMap.put(LogConstants.REGION_PROVINCE, regioninfo[0]);
-            logMap.put(LogConstants.REGION_CITY, regioninfo[1]);
-//            logMap.put(LogConstants.LOG_COLUMN_IPCODE, iPv4Handler.getIPcode(ip));
-        }
-    }
 }
 
 

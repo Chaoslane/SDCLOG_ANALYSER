@@ -21,7 +21,7 @@ public class IPv4Handler {
     private static final String udbacIPtransArea = "/udbacIPtransArea.csv";
     private static List<Integer> sortedList;
     private static Map<Integer, String> mapSegs ;
-    private static Map<String, String[]> mapArea ;
+    private static Map<String, String> mapArea ;
 
     public IPv4Handler() throws IOException {
         this(IPv4Handler.class.getResourceAsStream(udbacIPtransSegs),
@@ -48,7 +48,7 @@ public class IPv4Handler {
         List<String> readAreas = IOUtils.readLines(udbacAreaInputStream);
         for (String oneline : readAreas) {
             String[] strings = oneline.split(LogConstants.SEPARTIOR_TAB);
-            mapArea.put(strings[2], strings);
+            mapArea.put(strings[2], strings[0]+LogConstants.SEPARTIOR_COMMA+strings[1]);
         }
     }
 
@@ -58,7 +58,7 @@ public class IPv4Handler {
      * @return  province,city
      * @throws IOException
      */
-    public String[] getArea(String logIP){
+    public String getArea(String logIP){
         return mapArea.get(getIPcode(logIP));
     }
 
@@ -74,27 +74,27 @@ public class IPv4Handler {
     }
     /**
      * 二分查找 ip 在有序 list 中的 index
-     * @param rangeList ip转化成整数后 sort
+     * @param sortedList ip转化成整数后 sort
      * @param ipInt ipToInt
      * @return index
      */
-    private Integer searchIP(List<Integer> rangeList, Integer ipInt) {
-        int mid = rangeList.size() / 2;
-        if (rangeList.get(mid) == ipInt) {
+    private Integer searchIP(List<Integer> sortedList, Integer ipInt) {
+        int mid = sortedList.size() / 2;
+        if (sortedList.get(mid) == ipInt) {
             return mid;
         }
         int start = 0;
-        int end = rangeList.size() - 1;
+        int end = sortedList.size() - 1;
         while (start <= end) {
             mid = (end - start) / 2 + start;
-            if (ipInt < rangeList.get(mid)) {
+            if (ipInt < sortedList.get(mid)) {
                 end = mid - 1;
-                if(ipInt > rangeList.get(mid-1)){
+                if(ipInt > sortedList.get(mid-1)){
                     return mid - 1;
                 }
-            } else if (ipInt > rangeList.get(mid)) {
+            } else if (ipInt > sortedList.get(mid)) {
                 start = mid + 1;
-                if (ipInt < rangeList.get(mid + 1)) {
+                if (ipInt < sortedList.get(mid + 1)) {
                     return mid;
                 }
             } else {

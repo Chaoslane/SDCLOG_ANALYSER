@@ -22,29 +22,32 @@ import java.io.IOException;
  * Created by root on 2017/1/10.
  */
 public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, Text> {
-    private static String[] fields ;
+    private String fieldsLog ;
+    private String fieldsQuery;
 
     protected void setup(Context context) throws IOException, InterruptedException{
         Configuration configuration = context.getConfiguration();
-        fields = StringUtils.split(configuration.get("fields").trim(),LogConstants.SEPARTIOR_COMMA);
-        if (fields.length == 0) {
-            throw new RuntimeException("fields is null");
+        fieldsLog = configuration.get("fields.log");
+        fieldsQuery = configuration.get("fields.query");
+        if (StringUtils.isBlank(fieldsLog) || StringUtils.isBlank(fieldsQuery)) {
+            System.out.println("Usage args: -Dfields.log=a,b,c -Dfields.query=a1?a2?a3,b1");
+            System.exit(-1);
         }
     }
 
     protected void map(LongWritable key, Text value, Context context) {
         try {
+            context.getCounter(LogConstants.MyCounters.ALLLINECOUNTER).increment(1);
             String[] logTokens = StringUtils.split(value.toString(), LogConstants.SEPARTIOR_SPACE);
             //判断日志格式是否正确
             if (StringUtils.isBlank(value.toString()) || logTokens.length != 15) {
                 return;
             }
             //传入 -Dfields 参数取指定字段
-            String sdcLog = LogParserUtil.handleLog(logTokens, fields);
-            if (StringUtils.isNotBlank(sdcLog)) {
-                context.getCounter(LogConstants.MyCounters.ALLLINECOUNTER).increment(1);
-                context.write(NullWritable.get(), new Text(sdcLog));
-            }
+            String parsedLog = LogParserUtil.handleLog(logTokens, fieldsLog);
+            String parsedQuery = LogParserUtil.handleQuery(logTokens, fieldsQuery);
+
+            context.write(NullWritable.get(), new Text(parsedLog+LogConstants.SEPARTIOR_COMMA+parsedQuery));
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
@@ -57,7 +60,7 @@ public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, 
 //            conf.set("fs.defaultFS", "hdfs://192.168.4.2:8022");
             String inputArgs[] = new GenericOptionsParser(conf, args).getRemainingArgs();
             if (inputArgs.length != 2) {
-                System.err.println("\"Usage:<-Dfields=[field1?field2]> <inputPath> <outputPath>/n\"");
+                System.err.println("\"Usage:<inputPath> <outputPath>/n\"");
                 System.exit(2);
             }
             String inputPath = inputArgs[0];
@@ -71,6 +74,8 @@ public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, 
             job1.setJarByClass(LogAnalyserMapper.class);
             job1.setMapperClass(LogAnalyserMapper.class);
             job1.setMapOutputKeyClass(NullWritable.class);
+
+            job1.setNumReduceTasks(0);
             if (job1.waitForCompletion(true)) {
                 System.out.println("-----job succeed-----");
                 System.out.println("-----alllines count-----:" +

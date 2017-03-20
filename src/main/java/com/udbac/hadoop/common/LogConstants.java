@@ -43,14 +43,12 @@ public class LogConstants {
     /**
      * 动作发生的日期时间
      */
-    public static final String LOG_COLUMN_DATETIME = "datetime";
+    public static final String LOG_COLUMN_DATETIME = "date_time";
     /**
      * App客户端IP地址
      */
     public static final String LOG_COLUMN_IP = "c_ip";
-    public static final String REGION_PROVINCE = "province";
-    public static final String REGION_CITY = "city";
-    public static final String LOG_COLUMN_IPCODE = "ipcode";
+    public static final String LOG_COLUMN_REGION = "region";
 
     public static final String LOG_COLUMN_USERNAME = "cs_username";
     /**
@@ -81,8 +79,20 @@ public class LogConstants {
     /**
      * 客户端浏览器、操作系统等情况，原生App采集中此数据为空。
      */
-
     public static final String LOG_COLUMN_USERAGENT = "cs_user_agent";
+    /**
+     * 客户端cookies内容，原生App采集中此数据为空。
+     */
+    public static final String LOG_COLUMN_COOKIE = "cs_cookie";
+    /**
+     * 用户此动作时的前向链接，原生App采集中此数据为空。
+     */
+    public static final String LOG_COLUMN_REFERER = "cs_referer";
+    /**
+     * dcsid 渠道id
+     */
+    public static final String LOG_COLUMN_DCSID = "dcsid";
+
     /**
      * 操作系统名称
      */
@@ -103,16 +113,7 @@ public class LogConstants {
      * 浏览器版本
      */
     public static final String UA_DEVICE = "device";
-    /**
-     * 客户端cookies内容，原生App采集中此数据为空。
-     */
-    public static final String LOG_COLUMN_COOKIE = "cs_cookie";
-    /**
-     * 用户此动作时的前向链接，原生App采集中此数据为空。
-     */
-    public static final String LOG_COLUMN_REFERER = "cs_referer";
 
-    public static final String LOG_COLUMN_DCSID = "dcsid";
 
     public enum MyCounters {
         ALLLINECOUNTER
