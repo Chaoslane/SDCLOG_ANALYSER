@@ -1,6 +1,9 @@
 # sdclog-analyser-mr
 Analysis SDClog command:
-hadoop jar sdclog-analyser-mr.jar com.udbac.hadoop.mr.LogAnalyserMapper \
--Dmapreduce.job.reduces=3 -Dfields=dcsid -files udbacIPtransArea.csv,udbacIPtransSegs.csv \
-input output
+Usage args:
+-Dfilename.pattern=.*StringRegex.*
+-Dfields.log=field1,field2,field3
+-Dfields.query=field1?field1alias,field2 (all querys usages -Dfields.query=whole)
+<inputPath>
+<outputPath>
 

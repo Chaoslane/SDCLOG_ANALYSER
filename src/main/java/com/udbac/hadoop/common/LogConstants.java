@@ -119,8 +119,8 @@ public class LogConstants {
             "Usage args:" + "\n" +
                     "-Dfilename.pattern=.*StringRegex.* " + "\n" +
                     "-Dfields.log=field1,field2,field3 " + "\n" +
-                    "-Dfields.query=field1?field1alias,field2 " + "\n" + "(all querys usages -Dfields.query=whole)"+
-                    "<inputPath> " +
+                    "-Dfields.query=field1?field1alias,field2 (all querys usages -Dfields.query=whole)" + "\n" +
+                    "<inputPath> " + "\n" +
                     "<outputPath> ";
 
     public enum MyCounters {
