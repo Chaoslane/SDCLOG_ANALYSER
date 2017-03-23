@@ -8,6 +8,9 @@ import java.net.UnknownHostException;
 
 public class IPv4Util {
 
+    private IPv4Util() {
+    }
+
     private final static int INADDRSZ = 4;
     /**
      * 把IP地址转化为字节数组

@@ -115,6 +115,14 @@ public class LogConstants {
     public static final String UA_DEVICE = "device";
 
 
+    public static String INPUTARGSWARN =
+            "Usage args:" + "\n" +
+                    "-Dfilename.pattern=.*StringRegex.* " + "\n" +
+                    "-Dfields.log=field1,field2,field3 " + "\n" +
+                    "-Dfields.query=field1?field1alias,field2 " + "\n" + "(all querys usages -Dfields.query=whole)"+
+                    "<inputPath> " +
+                    "<outputPath> ";
+
     public enum MyCounters {
         ALLLINECOUNTER
     }

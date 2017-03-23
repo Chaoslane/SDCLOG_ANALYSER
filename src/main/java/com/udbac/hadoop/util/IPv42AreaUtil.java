@@ -4,10 +4,8 @@ package com.udbac.hadoop.util;
  * Created by root on 2017/1/16.
  */
 import com.udbac.hadoop.common.LogConstants;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -16,23 +14,26 @@ import java.util.*;
  * Created by root on 2017/1/12.
  * IP解析为地域名称
  */
-public class IPv4Handler {
+public class IPv42AreaUtil {
     private static final String udbacIPtransSegs = "/udbacIPtransSegs.csv";
     private static final String udbacIPtransArea = "/udbacIPtransArea.csv";
     private static List<Integer> sortedList;
     private static Map<Integer, String> mapSegs ;
     private static Map<String, String> mapArea ;
 
-    public IPv4Handler() throws IOException {
-        this(IPv4Handler.class.getResourceAsStream(udbacIPtransSegs),
-                IPv4Handler.class.getResourceAsStream(udbacIPtransArea));
+    private IPv42AreaUtil() {
     }
 
-    public IPv4Handler(InputStream udbacSegsInputStream , InputStream udbacAreaInputStream) throws IOException {
-        this.initialize(udbacSegsInputStream,udbacAreaInputStream);
+    static{
+        try {
+            initialize(IPv42AreaUtil.class.getResourceAsStream(udbacIPtransSegs)
+                    ,IPv42AreaUtil.class.getResourceAsStream(udbacIPtransArea));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    private void initialize(InputStream udbacSegsInputStream , InputStream udbacAreaInputStream) throws IOException {
+    private static void initialize(InputStream udbacSegsInputStream , InputStream udbacAreaInputStream) throws IOException {
         mapSegs = new HashMap<>();
         sortedList = new ArrayList<>();
         List<String> readSeges = IOUtils.readLines(udbacSegsInputStream);
@@ -58,7 +59,7 @@ public class IPv4Handler {
      * @return  province,city
      * @throws IOException
      */
-    public String getArea(String logIP){
+    public static String getArea(String logIP){
         return mapArea.get(getIPcode(logIP));
     }
 
@@ -68,7 +69,7 @@ public class IPv4Handler {
      * @return IPcode
      * @throws IOException
      */
-    public String getIPcode(String logIP){
+    public static String getIPcode(String logIP){
         Integer index = searchIP(sortedList, IPv4Util.ipToInt(logIP));
         return mapSegs.get(sortedList.get(index));
     }
@@ -78,7 +79,7 @@ public class IPv4Handler {
      * @param ipInt ipToInt
      * @return index
      */
-    private Integer searchIP(List<Integer> sortedList, Integer ipInt) {
+    private static Integer searchIP(List<Integer> sortedList, Integer ipInt) {
         int mid = sortedList.size() / 2;
         if (sortedList.get(mid) == ipInt) {
             return mid;
