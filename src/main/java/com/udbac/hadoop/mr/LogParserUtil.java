@@ -40,11 +40,11 @@ public class LogParserUtil{
         }
     }
 
-    String handleLog(String[] lineSplits) throws IOException{
+    String handleLog(String[] lineSplits){
         return handleLog(lineSplits,this.logFields);
     }
 
-    private String handleLog(String[] lineSplits, String logFields) throws IOException {
+    private String handleLog(String[] lineSplits, String logFields){
         SplitValueBuilder svb = new SplitValueBuilder(LogConstants.SEPARTIOR_TAB);
         //hashmap中放入除了query外所有字段
         Map<String, String> logMap = new HashMap<>();
