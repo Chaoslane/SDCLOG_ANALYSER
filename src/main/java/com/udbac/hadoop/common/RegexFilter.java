@@ -26,10 +26,6 @@ public class RegexFilter extends Configured implements PathFilter {
         try {
             fs = FileSystem.get(getConf());
             fileReg = getConf().get("filename.pattern");
-            if (StringUtils.isBlank(fileReg)) {
-                System.out.println(LogConstants.INPUTARGSWARN);
-                System.exit(-1);
-            }
             pattern = Pattern.compile(fileReg);
             if (fs.isDirectory(path)) {
                 return true;

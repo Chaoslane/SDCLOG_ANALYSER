@@ -48,7 +48,7 @@ public class LogConstants {
      * App客户端IP地址
      */
     public static final String LOG_COLUMN_IP = "c_ip";
-    public static final String LOG_COLUMN_REGION = "region";
+    public static final String LOG_COLUMN_AREA = "area";
 
     public static final String LOG_COLUMN_USERNAME = "cs_username";
     /**
@@ -118,8 +118,8 @@ public class LogConstants {
     public static String INPUTARGSWARN =
             "Usage args:" + "\n" +
                     "-Dfilename.pattern=.*StringRegex.* " + "\n" +
-                    "-Dfields.log=field1,field2,field3 " + "\n" +
-                    "-Dfields.query=field1?field1alias,field2 (all querys usages -Dfields.query=whole)" + "\n" +
+                    "-Dfields.common=field1,field2,field3 " + "\n" +
+                    "-Dfields.json=field1?field1alias,field2 (all querys usages -Dfields.json=whole)" + "\n" +
                     "<inputPath> " + "\n" +
                     "<outputPath> ";
 

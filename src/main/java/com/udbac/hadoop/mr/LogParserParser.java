@@ -20,24 +20,16 @@ import java.net.URLDecoder;
 /**
  * Created by root on 2017/1/5.
  */
-public class LogParserUtil{
+public class LogParserParser {
 
     private Configuration conf;
     private String logFields;
     private String queryFields;
 
-    LogParserUtil(Configuration conf) {
+    LogParserParser(Configuration conf) {
         this.conf = conf;
-        this.initial();
-    }
-
-    private void initial() {
-        logFields = conf.get("fields.log");
-        queryFields = conf.get("fields.query");
-        if (StringUtils.isBlank(logFields) || StringUtils.isBlank(queryFields)){
-            System.out.println(LogConstants.INPUTARGSWARN);
-            System.exit(-1);
-        }
+        logFields = conf.get("fields.common");
+        queryFields = conf.get("fields.json");
     }
 
     String handleLog(String[] lineSplits){
@@ -52,7 +44,7 @@ public class LogParserUtil{
                 lineSplits[0] + LogConstants.SEPARTIOR_SPACE + lineSplits[1]);
         logMap.put(LogConstants.LOG_COLUMN_DATETIME, date_time);
         logMap.put(LogConstants.LOG_COLUMN_IP, lineSplits[2]);
-        logMap.put(LogConstants.LOG_COLUMN_REGION, IPv42AreaUtil.getArea(lineSplits[2]));
+        logMap.put(LogConstants.LOG_COLUMN_AREA, IPv42AreaUtil.getArea(lineSplits[2]));
         logMap.put(LogConstants.LOG_COLUMN_USERNAME, lineSplits[3]);
         logMap.put(LogConstants.LOG_COLUMN_HOST, lineSplits[4]);
         logMap.put(LogConstants.LOG_COLUMN_METHOD, lineSplits[5]);
@@ -64,18 +56,26 @@ public class LogParserUtil{
         logMap.put(LogConstants.LOG_COLUMN_COOKIE, lineSplits[12]);
         logMap.put(LogConstants.LOG_COLUMN_REFERER, lineSplits[13]);
         logMap.put(LogConstants.LOG_COLUMN_DCSID, lineSplits[14]);
+        logMap.putAll(handleQuery(lineSplits));
         //取得logFields参数指定的字段
         String[] fields = StringUtils.split(logFields, LogConstants.SEPARTIOR_COMMA);
         for (String field : fields) {
-            svb.add(logMap.get(field));
+            if (logMap.containsKey(field)) {
+                svb.add(logMap.get(field));
+                logMap.remove(field);
+            }else {
+                svb.add("\\N");
+            }
         }
+        Gson gson = new Gson();
+        svb.add(gson.toJson(logMap));
         return svb.toString();
     }
 
-    String handleQuery(String[] lineSplits){
+    private Map<String,String> handleQuery(String[] lineSplits){
         return handleQuery(lineSplits,queryFields);
     }
-    private String handleQuery(String[] lineSplits, String queryFields) {
+    private Map<String,String> handleQuery(String[] lineSplits, String queryFields) {
         String query = lineSplits[7];
         String key = null;
         String value = null;
@@ -96,10 +96,10 @@ public class LogParserUtil{
                 queryMap.put(key, value);
             }
         }
-        Gson gson = new Gson();
+
         if (queryFields.toLowerCase().equals("whole")) {
             //取得所有的query fields
-            return gson.toJson(queryMap);
+            return queryMap;
         }else {
             //取得queryFields参数指定的字段
             String[] fields = StringUtils.split(queryFields, LogConstants.SEPARTIOR_COMMA);
@@ -117,7 +117,7 @@ public class LogParserUtil{
                     selectedQuery.put(field, queryMap.get(field));
                 }
             }
-            return gson.toJson(selectedQuery);
+            return selectedQuery;
         }
     }
 
