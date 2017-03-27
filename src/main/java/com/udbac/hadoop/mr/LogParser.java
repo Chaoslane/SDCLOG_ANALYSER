@@ -20,24 +20,23 @@ import java.net.URLDecoder;
 /**
  * Created by root on 2017/1/5.
  */
-public class LogParserParser {
+public class LogParser {
 
-    private Configuration conf;
-    private String logFields;
-    private String queryFields;
-
-    LogParserParser(Configuration conf) {
-        this.conf = conf;
+    private static Configuration conf;
+    private static String logFields;
+    private static String queryFields;
+    static {
+        conf = new Configuration();
         logFields = conf.get("fields.common");
         queryFields = conf.get("fields.json");
     }
 
-    String handleLog(String[] lineSplits){
-        return handleLog(lineSplits,this.logFields);
-    }
 
-    private String handleLog(String[] lineSplits, String logFields){
-        SplitValueBuilder svb = new SplitValueBuilder(LogConstants.SEPARTIOR_TAB);
+    public static String handleLog(String line) throws UnsupportedEncodingException {
+        String[] lineSplits = line.split(LogConstants.SEPARTIOR_SPACE);
+        if (lineSplits.length != 15) {
+            throw new UnsupportedEncodingException("SDClog fields num wrong,only support 15 fields \n Log : "+line);
+        }
         //hashmap中放入除了query外所有字段
         Map<String, String> logMap = new HashMap<>();
         String date_time = TimeUtil.handleTime(
@@ -58,6 +57,7 @@ public class LogParserParser {
         logMap.put(LogConstants.LOG_COLUMN_DCSID, lineSplits[14]);
         logMap.putAll(handleQuery(lineSplits));
         //取得logFields参数指定的字段
+        SplitValueBuilder svb = new SplitValueBuilder(LogConstants.SEPARTIOR_TAB);
         String[] fields = StringUtils.split(logFields, LogConstants.SEPARTIOR_COMMA);
         for (String field : fields) {
             if (logMap.containsKey(field)) {
@@ -72,23 +72,17 @@ public class LogParserParser {
         return svb.toString();
     }
 
-    private Map<String,String> handleQuery(String[] lineSplits){
-        return handleQuery(lineSplits,queryFields);
-    }
-    private Map<String,String> handleQuery(String[] lineSplits, String queryFields) {
+    static private Map<String,String> handleQuery(String[] lineSplits) {
         String query = lineSplits[7];
-        String key = null;
-        String value = null;
         Map<String, String> queryMap = new HashMap<>();
         String[] uriQuerys = StringUtils.split(query, LogConstants.SEPARATOR_AND);
         for (String uriQuery : uriQuerys) {
-            String[] uriitems = StringUtils.split(uriQuery, LogConstants.SEPARTIOR_EQUAL);
-            if (uriitems.length == 2) {
-                key = uriitems[0];
-                value = uriitems[1];
+            String key = StringUtils.substringBefore(uriQuery, LogConstants.SEPARTIOR_EQUAL);
+            String value = StringUtils.substringAfter(uriQuery, LogConstants.SEPARTIOR_EQUAL);
+            if (StringUtils.isNotBlank(key) && StringUtils.isNotBlank(value)) {
                 if (value.contains("%")) {
                     try {
-                        value = URLDecoder.decode(URLDecoder.decode(value, "UTF-8"),"UTF-8");
+                        value = URLDecoder.decode(URLDecoder.decode(value, "UTF-8"), "UTF-8");
                     } catch (UnsupportedEncodingException | IllegalArgumentException e) {
                         System.out.println("decode failed str:" + value);
                     }
