@@ -38,7 +38,7 @@ public class IPv42AreaUtil {
         sortedList = new ArrayList<>();
         List<String> readSeges = IOUtils.readLines(udbacSegsInputStream);
         for (String oneline : readSeges) {
-            String[] strings = oneline.split(LogConstants.SEPARTIOR_TAB);
+            String[] strings = oneline.split("\t");
             Integer startIPInt = IPv4Util.ipToInt(strings[0]);
             mapSegs.put(startIPInt,strings[2]);
             sortedList.add(startIPInt);
@@ -48,19 +48,18 @@ public class IPv42AreaUtil {
         mapArea = new HashMap<>();
         List<String> readAreas = IOUtils.readLines(udbacAreaInputStream);
         for (String oneline : readAreas) {
-            String[] strings = oneline.split(LogConstants.SEPARTIOR_TAB);
-            mapArea.put(strings[2], strings[0]+LogConstants.SEPARTIOR_COMMA+strings[1]);
+            String[] strings = oneline.split("\t");
+            mapArea.put(strings[2], strings[0]+","+strings[1]);
         }
     }
 
     /**
      * 解析为 province,city
      * @param logIP IP字符串
-     * @return  province,city
-     * @throws IOException
+     * @return province,city
      */
-    public static String getArea(String logIP){
-        return mapArea.get(getIPcode(logIP));
+    public static String[] getArea(String logIP){
+        return mapArea.get(getIPcode(logIP)).split(",");
     }
 
     /**

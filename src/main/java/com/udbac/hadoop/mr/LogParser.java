@@ -1,117 +1,166 @@
 package com.udbac.hadoop.mr;
 
-import com.google.gson.Gson;
-import com.udbac.hadoop.common.LogConstants;
+import com.udbac.hadoop.common.LogParseException;
 import com.udbac.hadoop.util.IPv42AreaUtil;
-import com.udbac.hadoop.util.SplitValueBuilder;
 import com.udbac.hadoop.util.TimeUtil;
 import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.util.Tool;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
-
-import java.net.URLDecoder;
 
 /**
  * Created by root on 2017/1/5.
  */
-public class LogParser {
+public class LogParser extends Configured {
+    private static Map<String, String> logMap = new HashMap<>(100);
 
-    private static Configuration conf;
-    private static String logFields;
-    private static String queryFields;
-    static {
-        conf = new Configuration();
-        logFields = conf.get("fields.common");
-        queryFields = conf.get("fields.json");
+    static Map<String, String> logParserSDC(String line) throws LogParseException {
+        logMap.clear();
+        String[] fields = line.split("[\t ]");
+
+        if (15 != fields.length) {
+            if (fields[0].contains("#")) {
+                throw new LogParseException(
+                        "Skip log comments:" + line);
+            }else{
+                throw new LogParseException(
+                        "Unsupported Log Format:got " + fields.length + " fields, only support 15." + line);
+            }
+        }
+
+        // SDC日志采用格林威治时间 调整时区
+        String dateTime = TimeUtil.handleTime(fields[0] + " " + fields[1]);
+        logMap.put("datetime", dateTime);
+        logMap.put("c_ip", fields[2]);
+        logMap.put("prov",IPv42AreaUtil.getArea(fields[2])[0]);
+        logMap.put("city",IPv42AreaUtil.getArea(fields[2])[0]);
+        logMap.put("cs_username", fields[3]);
+        logMap.put("cs_host", fields[4]);
+        logMap.put("cs_method", fields[5]);
+        logMap.put("cs_uri_stem", fields[6]);
+        logMap.put("sc_status", fields[8]);
+        logMap.put("sc_bytes", fields[9]);
+        logMap.put("cs_version", fields[10]);
+        logMap.put("cs_useragent", fields[11]);
+        logMap.put("cs_cookie", fields[12]);
+        logMap.put("cs_referer", fields[13]);
+        logMap.put("dcsid", fields[14]);
+
+        // 拆解cs_uri_query、cs_cookie，生成参数表
+        String query = fields[7];
+        String cookie = fields[12].replace(";;", ";+");
+        handleQuery(query, "&");
+        handleQuery(cookie, ";+");
+
+        // 解析Cookie串，尝试获取CookieID和SessionID
+        String ckid = null;     // CookieID
+        String ssms = "000";    // FIXME 毫秒时间暂时不取了
+        String wtFPC = logMap.get("WT_FPC");
+        if (StringUtils.isNotBlank(wtFPC)) {
+            wtFPC = urlDecode(wtFPC);
+            String[] info = wtFPC.replaceAll("[:;,]$", "").split("[=:;,]");
+
+            if (info.length >= 6 && info[0].equals("id") && info[2] .equals("lv")  && info[4] .equals("ss")
+                    && info[3].length() == 13 && info[5].length() == 13) {
+                String cms = info[3].substring(info[3].length()-3);
+
+                ckid = info[1];
+                ssms = cms;
+
+                String c_id = null;
+                if (ckid.contains("!")) {
+                    c_id = info[1].split("!")[0];
+                } else {
+                    c_id = info[1];
+                }
+
+                // XXX lv和ss都是客户端时间
+                // 从理论上讲，短时间内客户端与服务器的时钟差不会有显著变化
+                // 所以在这里用客户端毫秒数作为服务器毫秒数
+                String c_lv = info[3];
+                String c_ss = info[5];
+
+                //SDC日志，Cookie字段中的用户ID，与WT.vtid、WT.co_f相同
+                logMap.put("WT_FPC.id", c_id);
+                //SDC日志，Session最后一次访问时间，格式与WT_FPC.ss相同
+                logMap.put("WT_FPC.lv", c_lv);
+                //SDC日志，Session起始时间，time_t值后加3位毫秒值
+                logMap.put("WT_FPC.ss", c_ss);
+
+                logMap.put("session_id", ckid + ":" + c_ss);
+                logMap.put("SS.id", c_id);
+                //Session开始时间
+                logMap.put("SS.lv", c_lv);
+                //Session当前时间
+                logMap.put("SS.ss", c_ss);
+
+                if (StringUtils.isNumeric(c_ss) && StringUtils.isNumeric(c_lv)) {
+                    Long ss = Long.parseLong(c_ss);
+                    Long lv = Long.parseLong(c_lv);
+                    //Session存活时间
+                    logMap.put("SS.live", String.valueOf((lv - ss) / 1000));
+                }
+            }
+        }
+
+        // 未能成功的从WT_FPC中解析出CookieID，尝试从cs_uri_query中解析
+        if (StringUtils.isBlank(ckid)) {
+            for (String k : new String[]{"WT.vtid", "WT.co_f"}) {
+                if (StringUtils.isNotBlank(logMap.get(k))) {
+                    ckid = logMap.get(k);
+                    break;
+                }
+            }
+        }
+
+        if (StringUtils.isNotBlank(ckid)) {
+            // XXX 在SDC日志中，实际上并不区分CookieID和SessionID
+            // 实际上CookieID的尾部就是Session起始时间
+            // FIXME 需要再次确认
+            logMap.put("session_id", ckid);
+            logMap.put("cookie_id", ckid);
+            logMap.put("ckid", ckid);
+        }
+
+        return logMap;
     }
 
 
-    public static String handleLog(String line) throws UnsupportedEncodingException {
-        String[] lineSplits = line.split(LogConstants.SEPARTIOR_SPACE);
-        if (lineSplits.length != 15) {
-            throw new UnsupportedEncodingException("SDClog fields num wrong,only support 15 fields \n Log : "+line);
+    private static void check() {
+        String ckid = logMap.get("WT_FPC.id");
+        if (StringUtils.isNotBlank(ckid) && ckid.length() >= 32) {
+            logMap.put("WT_FPC.id_hash", ckid.substring(0, 19));
+            logMap.put("WT_FPC.id_tick", ckid.substring(19));
         }
-        //hashmap中放入除了query外所有字段
-        Map<String, String> logMap = new HashMap<>();
-        String date_time = TimeUtil.handleTime(
-                lineSplits[0] + LogConstants.SEPARTIOR_SPACE + lineSplits[1]);
-        logMap.put(LogConstants.LOG_COLUMN_DATETIME, date_time);
-        logMap.put(LogConstants.LOG_COLUMN_IP, lineSplits[2]);
-        logMap.put(LogConstants.LOG_COLUMN_AREA, IPv42AreaUtil.getArea(lineSplits[2]));
-        logMap.put(LogConstants.LOG_COLUMN_USERNAME, lineSplits[3]);
-        logMap.put(LogConstants.LOG_COLUMN_HOST, lineSplits[4]);
-        logMap.put(LogConstants.LOG_COLUMN_METHOD, lineSplits[5]);
-        logMap.put(LogConstants.LOG_COLUMN_URISTEM, lineSplits[6]);
-        logMap.put(LogConstants.LOG_COLUMN_STATUS, lineSplits[8]);
-        logMap.put(LogConstants.LOG_COLUMN_BYTES, lineSplits[9]);
-        logMap.put(LogConstants.LOG_COLUMN_VERSION, lineSplits[10]);
-        logMap.put(LogConstants.LOG_COLUMN_USERAGENT, lineSplits[11]);
-        logMap.put(LogConstants.LOG_COLUMN_COOKIE, lineSplits[12]);
-        logMap.put(LogConstants.LOG_COLUMN_REFERER, lineSplits[13]);
-        logMap.put(LogConstants.LOG_COLUMN_DCSID, lineSplits[14]);
-        logMap.putAll(handleQuery(lineSplits));
-        //取得logFields参数指定的字段
-        SplitValueBuilder svb = new SplitValueBuilder(LogConstants.SEPARTIOR_TAB);
-        String[] fields = StringUtils.split(logFields, LogConstants.SEPARTIOR_COMMA);
-        for (String field : fields) {
-            if (logMap.containsKey(field)) {
-                svb.add(logMap.get(field));
-                logMap.remove(field);
-            }else {
-                svb.add("\\N");
-            }
-        }
-        Gson gson = new Gson();
-        svb.add(gson.toJson(logMap));
-        return svb.toString();
+
     }
 
-    static private Map<String,String> handleQuery(String[] lineSplits) {
-        String query = lineSplits[7];
-        Map<String, String> queryMap = new HashMap<>();
-        String[] uriQuerys = StringUtils.split(query, LogConstants.SEPARATOR_AND);
-        for (String uriQuery : uriQuerys) {
-            String key = StringUtils.substringBefore(uriQuery, LogConstants.SEPARTIOR_EQUAL);
-            String value = StringUtils.substringAfter(uriQuery, LogConstants.SEPARTIOR_EQUAL);
-            if (StringUtils.isNotBlank(key) && StringUtils.isNotBlank(value)) {
-                if (value.contains("%")) {
-                    try {
-                        value = URLDecoder.decode(URLDecoder.decode(value, "UTF-8"), "UTF-8");
-                    } catch (UnsupportedEncodingException | IllegalArgumentException e) {
-                        System.out.println("decode failed str:" + value);
-                    }
-                }
-                queryMap.put(key, value);
+
+    private static void handleQuery(String query, String delimiter) {
+        String[] items = StringUtils.split(query, delimiter);
+        for (String item : items) {
+            String[] kv = item.split("=", 2);
+            String key = kv[0];
+            if (StringUtils.containsIgnoreCase(kv[0], "wt.")) {
+                key = kv[0].replace("wt.", "WT.");
+            }
+            if (kv.length == 2) {
+                logMap.put(key, kv[1]);
+            } else {
+                logMap.put(key, "");
             }
         }
+    }
 
-        if (queryFields.toLowerCase().equals("whole")) {
-            //取得所有的query fields
-            return queryMap;
-        }else {
-            //取得queryFields参数指定的字段
-            String[] fields = StringUtils.split(queryFields, LogConstants.SEPARTIOR_COMMA);
-            Map<String, String> selectedQuery = new HashMap<>();
-            for (String field : fields) {
-                if (field.contains(LogConstants.SEPARTIOR_QUES)) {
-                    String[] fiesplits = StringUtils.split(field, LogConstants.SEPARTIOR_QUES);
-                    for (String fiesplit : fiesplits) {
-                        if (StringUtils.isNotBlank(queryMap.get(fiesplit))) {
-                            selectedQuery.put(fiesplit, queryMap.get(fiesplit));
-                            break;
-                        }
-                    }
-                }else {
-                    selectedQuery.put(field, queryMap.get(field));
-                }
-            }
-            return selectedQuery;
+    //URL解码
+    public static String urlDecode(String strUrl) throws LogParseException {
+        try {
+            return URLDecoder.decode(strUrl.replace("%25", "%").replace("\\x", "%"), "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new LogParseException("Unsupported URL format:" + strUrl);
         }
     }
 

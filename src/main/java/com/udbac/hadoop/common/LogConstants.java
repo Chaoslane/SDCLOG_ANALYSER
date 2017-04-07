@@ -4,30 +4,9 @@ package com.udbac.hadoop.common;
  * Created by root on 2017/1/16.
  */
 public class LogConstants {
-    /**
-     * 默认分隔符
-     */
-    public static final String SEPARTIOR_SPACE= " ";
-    /**
-     * 默认分隔符
-     */
-    public static final String SEPARATOR_AND = "&";
-    /**
-     * 默认分隔符
-     */
-    public static final String SEPARTIOR_EQUAL = "=";
-    /**
-     * 默认分隔符
-     */
-    public static final String SEPARTIOR_TAB = "\t";
-    /**
-     * field分隔符
-     */
-    public static final String SEPARTIOR_COMMA= ",";
-    /**
-     * field分隔符
-     */
-    public static final String SEPARTIOR_QUES = "?";
+    public static final String DATETIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
+    public static final String DATE_FORMAT = "yyyy-MM-dd";
+    public static final String TIME_FORMAT = "HH:mm:ss";
     /**
      * 默认值
      */
