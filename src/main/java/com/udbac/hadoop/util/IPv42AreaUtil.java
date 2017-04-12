@@ -58,8 +58,8 @@ public class IPv42AreaUtil {
      * @param logIP IP字符串
      * @return province,city
      */
-    public static String[] getArea(String logIP){
-        return mapArea.get(getIPcode(logIP)).split(",");
+    public static String getArea(String logIP){
+        return mapArea.get(getIPcode(logIP));
     }
 
     /**

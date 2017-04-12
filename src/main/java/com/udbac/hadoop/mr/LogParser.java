@@ -6,7 +6,6 @@ import com.udbac.hadoop.util.TimeUtil;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configured;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,29 +34,28 @@ public class LogParser extends Configured {
         String dateTime = TimeUtil.handleTime(fields[0] + " " + fields[1]);
         logMap.put("datetime", dateTime);
         logMap.put("c_ip", fields[2]);
-        logMap.put("prov",IPv42AreaUtil.getArea(fields[2])[0]);
-        logMap.put("city",IPv42AreaUtil.getArea(fields[2])[0]);
-        logMap.put("cs_username", fields[3]);
-        logMap.put("cs_host", fields[4]);
-        logMap.put("cs_method", fields[5]);
-        logMap.put("cs_uri_stem", fields[6]);
-        logMap.put("sc_status", fields[8]);
-        logMap.put("sc_bytes", fields[9]);
-        logMap.put("cs_version", fields[10]);
-        logMap.put("cs_useragent", fields[11]);
-        logMap.put("cs_cookie", fields[12]);
-        logMap.put("cs_referer", fields[13]);
-        logMap.put("dcsid", fields[14]);
+        if (fields[6].length()>1) logMap.put("cs_uri_stem", fields[6]);
+        if (fields[11].length()>1) logMap.put("cs_useragent", fields[11]);
+        if (fields[13].length()>1) logMap.put("WT.referer", fields[13]);
+        if (fields[14].length()==30)logMap.put("dcsid", fields[14].substring(26));
+//        logMap.put("cs_username", fields[3]);
+//        logMap.put("cs_host", fields[4]);
+//        logMap.put("cs_method", fields[5]);
+//        logMap.put("sc_status", fields[8]);
+//        logMap.put("sc_bytes", fields[9]);
+//        logMap.put("cs_version", fields[10]);
+//        logMap.put("cs_cookie", fields[12]);
 
         // 拆解cs_uri_query、cs_cookie，生成参数表
         String query = fields[7];
-        String cookie = fields[12].replace(";;", ";+");
         handleQuery(query, "&");
+        String cookie = fields[12].replace(";;", ";+");
         handleQuery(cookie, ";+");
 
-        // 解析Cookie串，尝试获取CookieID和SessionID
+        // PC和终端日志 解析Cookie串，尝试获取CookieID和SessionID
         String ckid = null;     // CookieID
         String ssms = "000";    // FIXME 毫秒时间暂时不取了
+
         String wtFPC = logMap.get("WT_FPC");
         if (StringUtils.isNotBlank(wtFPC)) {
             wtFPC = urlDecode(wtFPC);
@@ -84,18 +82,13 @@ public class LogParser extends Configured {
                 String c_ss = info[5];
 
                 //SDC日志，Cookie字段中的用户ID，与WT.vtid、WT.co_f相同
-                logMap.put("WT_FPC.id", c_id);
+                //logMap.put("WT_FPC.id", c_id);
                 //SDC日志，Session最后一次访问时间，格式与WT_FPC.ss相同
-                logMap.put("WT_FPC.lv", c_lv);
+                //logMap.put("WT_FPC.lv", c_lv);
                 //SDC日志，Session起始时间，time_t值后加3位毫秒值
-                logMap.put("WT_FPC.ss", c_ss);
+                //logMap.put("WT_FPC.ss", c_ss);
 
-                logMap.put("session_id", ckid + ":" + c_ss);
-                logMap.put("SS.id", c_id);
-                //Session开始时间
-                logMap.put("SS.lv", c_lv);
-                //Session当前时间
-                logMap.put("SS.ss", c_ss);
+                logMap.put("ssid", ckid + ":" + c_ss);
 
                 if (StringUtils.isNumeric(c_ss) && StringUtils.isNumeric(c_lv)) {
                     Long ss = Long.parseLong(c_ss);
@@ -106,7 +99,7 @@ public class LogParser extends Configured {
             }
         }
 
-        // 未能成功的从WT_FPC中解析出CookieID，尝试从cs_uri_query中解析
+        // 未能成功的从WT_FPC中解析出CookieID 和SessionID，尝试从cs_uri_query中解析
         if (StringUtils.isBlank(ckid)) {
             for (String k : new String[]{"WT.vtid", "WT.co_f"}) {
                 if (StringUtils.isNotBlank(logMap.get(k))) {
@@ -120,24 +113,32 @@ public class LogParser extends Configured {
             // XXX 在SDC日志中，实际上并不区分CookieID和SessionID
             // 实际上CookieID的尾部就是Session起始时间
             // FIXME 需要再次确认
-            logMap.put("session_id", ckid);
-            logMap.put("cookie_id", ckid);
             logMap.put("ckid", ckid);
         }
 
+        check();
         return logMap;
     }
 
 
     private static void check() {
+
+        logMap.put("prov", IPv42AreaUtil.getArea(logMap.get("c_ip")).split(",")[0]);
+        logMap.put("city", IPv42AreaUtil.getArea(logMap.get("c_ip")).split(",")[1]);
+        logMap.remove("c_ip");
+
         String ckid = logMap.get("WT_FPC.id");
         if (StringUtils.isNotBlank(ckid) && ckid.length() >= 32) {
-            logMap.put("WT_FPC.id_hash", ckid.substring(0, 19));
-            logMap.put("WT_FPC.id_tick", ckid.substring(19));
+            logMap.put("WT_FPC.id_hash", ckid.substring(0, 19)); //Cookie中解析出的用户ID的hash值
+            logMap.put("WT_FPC.id_tick", ckid.substring(19)); //Cookie中解析出的Cookie创建时间
         }
 
+        for (String s : new String[]{"WT.es", "WT.referer","WT.event"}) {
+            if (StringUtils.isNotBlank(logMap.get(s))) {
+                logMap.put(s, urlDecode(logMap.get(s)));
+            }
+        }
     }
-
 
     private static void handleQuery(String query, String delimiter) {
         String[] items = StringUtils.split(query, delimiter);
@@ -149,18 +150,16 @@ public class LogParser extends Configured {
             }
             if (kv.length == 2) {
                 logMap.put(key, kv[1]);
-            } else {
-                logMap.put(key, "");
             }
         }
     }
 
     //URL解码
-    public static String urlDecode(String strUrl) throws LogParseException {
+    public static String urlDecode(String strUrl){
         try {
-            return URLDecoder.decode(strUrl.replace("%25", "%").replace("\\x", "%"), "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new LogParseException("Unsupported URL format:" + strUrl);
+            return URLDecoder.decode(strUrl.replace("\\x", "%").replace("%25", "%"), "UTF-8");
+        } catch (Exception e ) {
+            return "";
         }
     }
 

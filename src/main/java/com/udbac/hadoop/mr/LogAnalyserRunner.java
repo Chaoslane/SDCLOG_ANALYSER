@@ -34,8 +34,7 @@ public class LogAnalyserRunner extends Configured implements Tool {
         conf.set("io.compression.codecs", "io.sensesecure.hadoop.xz.XZCodec");
         if (args.length != 2
                 || StringUtils.isBlank(conf.get("filename.pattern"))
-                || StringUtils.isBlank(conf.get("fields.json"))
-                || StringUtils.isBlank(conf.get("fields.common"))) {
+                || StringUtils.isBlank(conf.get("fields.column"))) {
             System.err.println(LogConstants.INPUTARGSWARN);
             System.exit(-1);
         }
