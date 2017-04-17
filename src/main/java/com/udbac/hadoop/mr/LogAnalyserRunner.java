@@ -56,11 +56,14 @@ public class LogAnalyserRunner extends Configured implements Tool {
         if (job1.waitForCompletion(true)) {
             System.out.println("-----job succeed-----");
             long costTime = (job1.getFinishTime() - job1.getStartTime()) / 1000;
-            long linesum = job1.getCounters().findCounter(LogConstants.MyCounters.ALLLINECOUNTER).getValue();
+            long linesum = job1.getCounters().findCounter(MyCounters.ALLLINECOUNTER).getValue();
             System.out.println(
                     linesum + " lines take:" + costTime + "s " + linesum / costTime + " line/s");
         }
         return job1.waitForCompletion(true) ? 0 : 1;
     }
 
+    public enum MyCounters {
+        ALLLINECOUNTER
+    }
 }
