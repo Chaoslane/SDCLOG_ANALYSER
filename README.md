@@ -1,9 +1,9 @@
 # sdclog-analyser-mr
-Analysis SDClog command:
-Usage args:
--Dfilename.pattern=.*StringRegex.*
--Dfields.log=field1,field2,field3
--Dfields.query=field1?field1alias,field2 (all querys usages -Dfields.query=whole)
-<inputPath>
-<outputPath>
+example:
+hadoop jar sdclog-analyser-mr.jar com.udbac.hadoop.mr.LogAnalyserRunner
+-Dfilename.pattern=.*20170101.*
+-Dfields.common=dcsid,date_time,ckid,ssid,WT.mobile
+hdfs 输入路径
+hdfs 输出路径
+
 

@@ -87,6 +87,6 @@
     </dependencies>
 
     <properties>
-        <org.apache.hadoop.version>2.6.0-cdh5.9.0</org.apache.hadoop.version>
+        <org.apache.hadoop.version>2.6.0</org.apache.hadoop.version>
     </properties>
 </project>

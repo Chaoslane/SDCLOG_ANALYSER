@@ -31,7 +31,7 @@ public class LogAnalyserRunner extends Configured implements Tool {
 
         Configuration conf = getConf();
 //        configuration.set("fs.defaultFS", "hdfs://192.168.4.3:8022");
-        conf.set("io.compression.codecs", "io.sensesecure.hadoop.xz.XZCodec");
+//        conf.set("io.compression.codecs", "io.sensesecure.hadoop.xz.XZCodec");
         if (args.length != 2
                 || StringUtils.isBlank(conf.get("filename.pattern"))
                 || StringUtils.isBlank(conf.get("fields.column"))) {

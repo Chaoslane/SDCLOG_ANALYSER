@@ -32,7 +32,7 @@ public class LogParser extends Configured {
 
         // SDC日志采用格林威治时间 调整时区
         String dateTime = TimeUtil.handleTime(fields[0] + " " + fields[1]);
-        logMap.put("datetime", dateTime);
+        logMap.put("date_time", dateTime);
         logMap.put("c_ip", fields[2]);
         if (fields[6].length()>1) logMap.put("cs_uri_stem", fields[6]);
         if (fields[11].length()>1) logMap.put("cs_useragent", fields[11]);
@@ -64,15 +64,11 @@ public class LogParser extends Configured {
 
             if (info.length >= 6 && info[0].equals("id") && info[2] .equals("lv")  && info[4] .equals("ss")
                     && info[3].length() == 13 && info[5].length() == 13) {
-
-                ckid = info[1];
-
                 // XXX lv和ss都是客户端时间
                 // 从理论上讲，短时间内客户端与服务器的时钟差不会有显著变化
                 // 所以在这里用客户端毫秒数作为服务器毫秒数
                 String c_lv = info[3];
                 String c_ss = info[5];
-
                 //String c_id = null;
                 //if (ckid.contains("!")) {
                 //    c_id = info[1].split("!")[0];
@@ -86,13 +82,15 @@ public class LogParser extends Configured {
                 //SDC日志，Session起始时间，time_t值后加3位毫秒值
                 //logMap.put("WT_FPC.ss", c_ss);
 
-                logMap.put("ssid", ckid + ":" + c_ss);
                 if (StringUtils.isNumeric(c_ss) && StringUtils.isNumeric(c_lv)) {
                     Long ss = Long.parseLong(c_ss);
                     Long lv = Long.parseLong(c_lv);
                     //Session存活时间
                     logMap.put("SS.live", String.valueOf((lv - ss) / 1000));
                 }
+
+                ckid = info[1];
+                ssid = StringUtils.isNotBlank(ckid) ? ckid + ":" + c_ss : ssid;
             }
         }
 
@@ -101,7 +99,11 @@ public class LogParser extends Configured {
             for (String k : new String[]{"WT.vtid", "WT.co_f"}) {
                 if (StringUtils.isNotBlank(logMap.get(k))) {
                     ckid = logMap.get(k);
-                    ssid = ckid + ":" + logMap.get("WT.vtvs");
+                    if (StringUtils.isNotBlank(logMap.get("WT.vt_sid"))) {
+                        ssid = logMap.get("WT.vt_sid");
+                    } else {
+                        ssid = StringUtils.isNotBlank(logMap.get("WT.vtvs")) ? ckid + ":" + logMap.get("WT.vtvs") : ssid;
+                    }
                     break;
                 }
             }
@@ -113,8 +115,11 @@ public class LogParser extends Configured {
         if (StringUtils.isNotBlank(ckid)) {
             logMap.put("ckid", ckid);
             logMap.put("ssid", ssid);
+            logMap.remove("WT.vtid");
+            logMap.remove("WT.co_f");
+            logMap.remove("WT.vt_sid");
+            logMap.remove("WT.vtvs");
         }
-
 
         check();
         return logMap;
@@ -135,7 +140,6 @@ public class LogParser extends Configured {
                 logMap.put(key, value);
             }
         }
-
 //        String ckid = logMap.get("WT_FPC.id");
 //        if (StringUtils.isNotBlank(ckid) && ckid.length() >= 32) {
 //            logMap.put("WT_FPC.id_hash", ckid.substring(0, 19)); //Cookie中解析出的用户ID的hash值
@@ -151,7 +155,8 @@ public class LogParser extends Configured {
                 String[] kv = item.split("=", 2);
                 if (kv.length == 2) {
                     String key = kv[0].replaceAll("(wt|Wt|wT)","WT");
-                    String value = kv[1].matches(".*(\\\\x[A-Za-z0-9]{2})+.*|.*(%[A-Za-z0-9]{2})+.*") ? urlDecode(kv[1]) : kv[1];
+                    String value = kv[1].matches(".*(\\\\x[A-Za-z0-9]{2})+.*|.*(%[A-Za-z0-9]{2})+.*")
+                            ? urlDecode(kv[1]) : kv[1];
                     logMap.put(key, value);
                 }
             }
