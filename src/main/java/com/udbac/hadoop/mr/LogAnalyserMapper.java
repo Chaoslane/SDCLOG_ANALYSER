@@ -26,6 +26,7 @@ public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, 
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
+        context.getCounter(LogAnalyserRunner.MyCounters.ALLLINECOUNTER).increment(1);
         Configuration conf = context.getConfiguration();
         if (StringUtils.isNotBlank(conf.get("fields.column")))
             fieldsColumn = conf.get("fields.column").split(",");
@@ -43,8 +44,7 @@ public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, 
     }
 
     /**
-     * 取程序输入参数 从logmap中取的参数字段值 fieldsJson为空 则取fieldsColumn差集
-     *
+     * 取程序输入参数 从logmap中取的参数字段值 取fieldsColumn差集放入Json
      * @param logMap 一条日志的所有字段值
      * @return 拼接结果字符串
      */

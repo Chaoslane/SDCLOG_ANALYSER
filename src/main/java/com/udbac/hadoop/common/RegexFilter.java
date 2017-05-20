@@ -27,7 +27,9 @@ public class RegexFilter extends Configured implements PathFilter {
 
             if (fs.isDirectory(path)) {
                 return true;
-            } else {
+            } else if (fs.getFileStatus(path).getLen() < 100) {
+                return false;
+            }else {
                 Matcher m = pattern.matcher(path.toString());
                 if (m.matches()) {
                     logger.info(path.toString()+" is matched");

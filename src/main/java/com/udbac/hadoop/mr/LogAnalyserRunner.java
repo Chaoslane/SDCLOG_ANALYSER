@@ -12,7 +12,6 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
-import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
@@ -41,12 +40,14 @@ public class LogAnalyserRunner extends Configured implements Tool {
         String inputPath = args[0];
         String outputPath = args[1];
 
-        Job job1 = Job.getInstance(conf, "LogAnalyser");
+        Job job1 = Job.getInstance(conf, "sdclog-analyser");
         TextInputFormat.addInputPath(job1, new Path(inputPath));
         TextInputFormat.setInputPathFilter(job1, RegexFilter.class);
+
         TextOutputFormat.setOutputPath(job1, new Path(outputPath));
         LazyOutputFormat.setOutputFormatClass(job1, TextOutputFormat.class);
         TextOutputFormat.setOutputCompressorClass(job1, GzipCodec.class);
+
         job1.setJarByClass(LogAnalyserMapper.class);
         job1.setMapperClass(LogAnalyserMapper.class);
         job1.setMapOutputKeyClass(NullWritable.class);

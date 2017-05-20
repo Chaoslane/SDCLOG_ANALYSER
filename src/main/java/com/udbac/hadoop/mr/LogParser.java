@@ -1,10 +1,8 @@
 package com.udbac.hadoop.mr;
 
 import com.udbac.hadoop.common.LogParseException;
-import com.udbac.hadoop.util.IPv42AreaUtil;
 import com.udbac.hadoop.util.TimeUtil;
 import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.conf.Configured;
 
 import java.net.URLDecoder;
 import java.util.HashMap;
@@ -13,7 +11,7 @@ import java.util.Map;
 /**
  * Created by root on 2017/1/5.
  */
-public class LogParser extends Configured {
+public class LogParser  {
     private static Map<String, String> logMap = new HashMap<>(100);
 
     static Map<String, String> logParserSDC(String line) throws LogParseException {
@@ -37,7 +35,7 @@ public class LogParser extends Configured {
         if (fields[6].length()>1) logMap.put("cs_uri_stem", fields[6]);
         if (fields[11].length()>1) logMap.put("cs_useragent", fields[11]);
         if (fields[13].length()>1) logMap.put("WT.referer", fields[13]);
-        if (fields[14].length()==30)logMap.put("dcsid", fields[14].substring(26));
+        if (fields[14].length()==30) logMap.put("dcsid", fields[14].substring(26));
         //logMap.put("cs_username", fields[3]);
         //logMap.put("cs_host", fields[4]);
         //logMap.put("cs_method", fields[5]);
@@ -69,6 +67,7 @@ public class LogParser extends Configured {
                 // 所以在这里用客户端毫秒数作为服务器毫秒数
                 String c_lv = info[3];
                 String c_ss = info[5];
+
                 //String c_id = null;
                 //if (ckid.contains("!")) {
                 //    c_id = info[1].split("!")[0];
@@ -128,9 +127,15 @@ public class LogParser extends Configured {
 
     private static void check() {
 
-        logMap.put("prov", IPv42AreaUtil.getArea(logMap.get("c_ip")).split(",")[0]);
-        logMap.put("city", IPv42AreaUtil.getArea(logMap.get("c_ip")).split(",")[1]);
-        logMap.remove("c_ip");
+//        logMap.put("prov", IPv42AreaUtil.getArea(logMap.get("c_ip")).split(",")[0]);
+//        logMap.put("city", IPv42AreaUtil.getArea(logMap.get("c_ip")).split(",")[1]);
+//        logMap.remove("c_ip");
+
+//        String ckid = logMap.get("WT_FPC.id");
+//        if (StringUtils.isNotBlank(ckid) && ckid.length() >= 32) {
+//            logMap.put("WT_FPC.id_hash", ckid.substring(0, 19)); //Cookie中解析出的用户ID的hash值
+//            logMap.put("WT_FPC.id_tick", ckid.substring(19)); //Cookie中解析出的Cookie创建时间
+//        }
 
         // "WT.es", "WT.referer" 去掉参数部分
         for (String key : new String[]{"WT.es", "WT.referer"}) {
@@ -140,11 +145,6 @@ public class LogParser extends Configured {
                 logMap.put(key, value);
             }
         }
-//        String ckid = logMap.get("WT_FPC.id");
-//        if (StringUtils.isNotBlank(ckid) && ckid.length() >= 32) {
-//            logMap.put("WT_FPC.id_hash", ckid.substring(0, 19)); //Cookie中解析出的用户ID的hash值
-//            logMap.put("WT_FPC.id_tick", ckid.substring(19)); //Cookie中解析出的Cookie创建时间
-//        }
     }
 
     //解析query WT_FPC中的key value值，有必要的进行url解码
@@ -164,7 +164,7 @@ public class LogParser extends Configured {
     }
 
     //URL解码
-    public static String urlDecode(String strUrl){
+    private static String urlDecode(String strUrl){
         try {
             strUrl = strUrl.replace("\\x", "%").replace("%25", "%");
             strUrl = URLDecoder.decode(strUrl, "utf-8");
