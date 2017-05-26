@@ -3,6 +3,7 @@ package com.udbac.hadoop.mr;
 import com.udbac.hadoop.common.LogParseException;
 import com.udbac.hadoop.util.TimeUtil;
 import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
 
 import java.net.URLDecoder;
 import java.util.HashMap;
@@ -11,18 +12,19 @@ import java.util.Map;
 /**
  * Created by root on 2017/1/5.
  */
-public class LogParser  {
+public class LogParser {
     private static Map<String, String> logMap = new HashMap<>(100);
+    private static Logger logger = Logger.getLogger(LogParser.class);
 
     static Map<String, String> logParserSDC(String line) throws LogParseException {
         logMap.clear();
-        String[] fields = line.split("[\t ]");
+        String[] fields = line.split(" ", -1);
 
         if (15 != fields.length) {
             if (fields[0].contains("#")) {
                 throw new LogParseException(
                         "Skip log comments:" + line);
-            }else{
+            } else {
                 throw new LogParseException(
                         "Unsupported Log Format:got " + fields.length + " fields, only support 15." + line);
             }
@@ -32,17 +34,16 @@ public class LogParser  {
         String dateTime = TimeUtil.handleTime(fields[0] + " " + fields[1]);
         logMap.put("date_time", dateTime);
         logMap.put("c_ip", fields[2]);
-        if (fields[6].length()>1) logMap.put("cs_uri_stem", fields[6]);
-        if (fields[11].length()>1) logMap.put("cs_useragent", fields[11]);
-        if (fields[13].length()>1) logMap.put("WT.referer", fields[13]);
-        if (fields[14].length()==30) logMap.put("dcsid", fields[14].substring(26));
+        if (fields[4].length() > 1) logMap.put("cs_host", fields[4]);
+        if (fields[6].length() > 1) logMap.put("cs_uri_stem", fields[6]);
+        if (fields[11].length() > 1) logMap.put("cs_useragent", fields[11]);
+        if (fields[13].length() > 1) logMap.put("WT.referer", fields[13]);
+        if (fields[14].length() == 30) logMap.put("dcsid", fields[14].substring(26));
         //logMap.put("cs_username", fields[3]);
-        //logMap.put("cs_host", fields[4]);
         //logMap.put("cs_method", fields[5]);
         //logMap.put("sc_status", fields[8]);
         //logMap.put("sc_bytes", fields[9]);
         //logMap.put("cs_version", fields[10]);
-        //logMap.put("cs_cookie", fields[12]);
 
         // 拆解cs_uri_query、cs_cookie，生成参数表
         String query = fields[7];
@@ -57,10 +58,9 @@ public class LogParser  {
 
         String wtFPC = logMap.get("WT_FPC");
         if (StringUtils.isNotBlank(wtFPC)) {
-            wtFPC = urlDecode(wtFPC);
             String[] info = wtFPC.replaceAll("[:;,]$", "").split("[=:;,]");
 
-            if (info.length >= 6 && info[0].equals("id") && info[2] .equals("lv")  && info[4] .equals("ss")
+            if (info.length >= 6 && info[0].equals("id") && info[2].equals("lv") && info[4].equals("ss")
                     && info[3].length() == 13 && info[5].length() == 13) {
                 // XXX lv和ss都是客户端时间
                 // 从理论上讲，短时间内客户端与服务器的时钟差不会有显著变化
@@ -149,14 +149,14 @@ public class LogParser  {
 
     //解析query WT_FPC中的key value值，有必要的进行url解码
     private static void handleQuery(String query, String delimiter) {
-        if (StringUtils.isNotBlank(query)){
+        if (StringUtils.isNotBlank(query)) {
+            query = query.replaceAll("%3D|%3d", "=");
             String[] items = StringUtils.split(query, delimiter);
             for (String item : items) {
                 String[] kv = item.split("=", 2);
                 if (kv.length == 2) {
-                    String key = kv[0].replaceAll("(wt|Wt|wT)","WT");
-                    String value = kv[1].matches(".*(\\\\x[A-Za-z0-9]{2})+.*|.*(%[A-Za-z0-9]{2})+.*")
-                            ? urlDecode(kv[1]) : kv[1];
+                    String key = kv[0].replaceAll("(wt|Wt|wT)", "WT");
+                    String value = urlDecode(kv[1]);
                     logMap.put(key, value);
                 }
             }
@@ -164,14 +164,16 @@ public class LogParser  {
     }
 
     //URL解码
-    private static String urlDecode(String strUrl){
+    private static String urlDecode(String strUrl) {
         try {
             strUrl = strUrl.replace("\\x", "%").replace("%25", "%");
             strUrl = URLDecoder.decode(strUrl, "utf-8");
-        } catch (Exception e ) {
-            e.printStackTrace();
+            return strUrl;
+        } catch (Exception e) {
+            logger.warn("URL decode error :" + strUrl);
+            if (strUrl.length() > 50) strUrl = "";
+            return strUrl;
         }
-        return strUrl;
     }
 
 }

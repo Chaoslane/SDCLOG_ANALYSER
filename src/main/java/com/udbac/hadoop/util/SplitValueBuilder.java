@@ -1,7 +1,5 @@
 package com.udbac.hadoop.util;
 
-import com.udbac.hadoop.common.LogConstants;
-
 /**
  * Created by root on 2016/7/13.
  */

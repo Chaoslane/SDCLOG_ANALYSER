@@ -2,7 +2,6 @@ package com.udbac.hadoop.mr;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonParser;
 import com.udbac.hadoop.common.LogParseException;
 import com.udbac.hadoop.util.SplitValueBuilder;
 import org.apache.commons.lang.StringUtils;
@@ -14,7 +13,6 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -28,8 +26,7 @@ public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, 
     protected void setup(Context context) throws IOException, InterruptedException {
         context.getCounter(LogAnalyserRunner.MyCounters.ALLLINECOUNTER).increment(1);
         Configuration conf = context.getConfiguration();
-        if (StringUtils.isNotBlank(conf.get("fields.column")))
-            fieldsColumn = conf.get("fields.column").split(",");
+        fieldsColumn = conf.get("fields.column").split(",");
     }
 
     protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
@@ -45,20 +42,19 @@ public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, 
 
     /**
      * 取程序输入参数 从logmap中取的参数字段值 取fieldsColumn差集放入Json
+     *
      * @param logMap 一条日志的所有字段值
      * @return 拼接结果字符串
      */
     private static String getResStr(Map<String, String> logMap) {
         SplitValueBuilder svb = new SplitValueBuilder("\t");
-        if (null != fieldsColumn) {
-            for (String field : fieldsColumn) {
-                String value = "";
-                if (StringUtils.isNotBlank(logMap.get(field))) {
-                    value = logMap.get(field);
-                }
-                logMap.remove(field);
-                svb.add(value);
+        for (String field : fieldsColumn) {
+            String value = "";
+            if (StringUtils.isNotBlank(logMap.get(field))) {
+                value = logMap.get(field);
             }
+            logMap.remove(field);
+            svb.add(value);
         }
         Gson gson = new GsonBuilder().disableHtmlEscaping().create();
         svb.add(gson.toJson(logMap));

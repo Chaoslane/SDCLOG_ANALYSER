@@ -23,7 +23,7 @@ public class LogConstants {
     public static String INPUTARGSWARN =
             "Usage args:" + "\n" +
                     "-Dfilename.pattern=.*StringRegex.* " + "\n" +
-                    "[-Dfields.column=field1,field2,field3] " + "\n" +
+                    "-Dfields.column=field1,field2,field3 " + "\n" +
                     "<inputPath> " + "\n" +
                     "<outputPath> ";
 
