@@ -19,52 +19,52 @@ import org.apache.hadoop.util.ToolRunner;
  * Created by root on 2017/3/23.
  */
 public class LogAnalyserRunner extends Configured implements Tool {
+    public enum MyCounters {ALLLINECOUNTER}
 
     public static void main(String[] args) throws Exception {
         int res = ToolRunner.run(new LogAnalyserRunner(), args);
         System.exit(res);
     }
 
+    private boolean isParamsBlank(Configuration conf) {
+        return StringUtils.isBlank(conf.get("filename.pattern"))
+                || StringUtils.isBlank(conf.get("fields.column"));
+    }
+
     @Override
     public int run(String[] args) throws Exception {
-
-        Configuration conf = getConf();
-//        configuration.set("fs.defaultFS", "hdfs://192.168.4.3:8022");
-//        conf.set("io.compression.codecs", "io.sensesecure.hadoop.xz.XZCodec");
-        if (args.length != 2
-                || StringUtils.isBlank(conf.get("filename.pattern"))
-                || StringUtils.isBlank(conf.get("fields.column"))) {
+        if (args.length != 2 || isParamsBlank(getConf())) {
             System.err.println(LogConstants.INPUTARGSWARN);
             System.exit(-1);
         }
+
+        Configuration conf = getConf();
+//        conf.set("fs.defaultFS", "hdfs://192.168.4.3:8022");
+//        conf.set("io.compression.codecs", "io.sensesecure.hadoop.xz.XZCodec");
         String inputPath = args[0];
         String outputPath = args[1];
 
-        Job job1 = Job.getInstance(conf, "sdclog-analyser");
-        TextInputFormat.addInputPath(job1, new Path(inputPath));
-        TextInputFormat.setInputPathFilter(job1, RegexFilter.class);
+        Job job = Job.getInstance(conf, "sdclog-analyser");
+        job.setJarByClass(LogAnalyserMapper.class);
+        job.setMapperClass(LogAnalyserMapper.class);
+        job.setMapOutputKeyClass(NullWritable.class);
 
-        TextOutputFormat.setOutputPath(job1, new Path(outputPath));
-        LazyOutputFormat.setOutputFormatClass(job1, TextOutputFormat.class);
-        TextOutputFormat.setOutputCompressorClass(job1, GzipCodec.class);
+        //input & output
+        TextInputFormat.addInputPath(job, new Path(inputPath));
+        TextInputFormat.setInputPathFilter(job, RegexFilter.class);
+        TextOutputFormat.setOutputPath(job, new Path(outputPath));
+        LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);
+        TextOutputFormat.setOutputCompressorClass(job, GzipCodec.class);
 
-        job1.setJarByClass(LogAnalyserMapper.class);
-        job1.setMapperClass(LogAnalyserMapper.class);
-        job1.setMapOutputKeyClass(NullWritable.class);
-        //无reduce
-        job1.setNumReduceTasks(0);
-
-        if (job1.waitForCompletion(true)) {
+        if (job.waitForCompletion(true)) {
             System.out.println("-----job succeed-----");
-            long costTime = (job1.getFinishTime() - job1.getStartTime()) / 1000;
-            long linesum = job1.getCounters().findCounter(MyCounters.ALLLINECOUNTER).getValue();
+            long costTime = (job.getFinishTime() - job.getStartTime()) / 1000;
+            long linesum = job.getCounters().findCounter(MyCounters.ALLLINECOUNTER).getValue();
             System.out.println(
                     linesum + " lines take:" + costTime + "s " + linesum / costTime + " line/s");
         }
-        return job1.waitForCompletion(true) ? 0 : 1;
+        return job.waitForCompletion(true) ? 0 : 1;
     }
 
-    public enum MyCounters {
-        ALLLINECOUNTER
-    }
+
 }
