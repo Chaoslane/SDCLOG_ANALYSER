@@ -18,7 +18,7 @@ import java.util.Map;
 /**
  * Created by root on 2017/1/10.
  */
-public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, Text> {
+public class LogAnalyserMapper extends Mapper<LongWritable, Text, Text, Text> {
     private static Logger logger = Logger.getLogger(LogAnalyserMapper.class);
     private static String[] fieldsColumn = null;
 
