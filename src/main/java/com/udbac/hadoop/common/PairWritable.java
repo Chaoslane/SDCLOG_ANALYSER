@@ -15,11 +15,20 @@ public class PairWritable implements Writable, WritableComparable<PairWritable> 
     private String cookieId;
     private String dateTime;
 
-    public PairWritable() {}
+    public PairWritable() {
+    }
 
     public PairWritable(String cookieId, String dateTime) {
         this.cookieId = cookieId;
         this.dateTime = dateTime;
+    }
+
+    public String getCookieId() {
+        return cookieId;
+    }
+
+    public String getDateTime() {
+        return dateTime;
     }
 
     @Override
@@ -42,7 +51,6 @@ public class PairWritable implements Writable, WritableComparable<PairWritable> 
         }
         return res;
     }
-
 
 
     public static class PairPartitioner extends Partitioner<PairWritable, Text> {
@@ -71,6 +79,18 @@ public class PairWritable implements Writable, WritableComparable<PairWritable> 
         }
     }
 
-    public static class PairGrouping extends
+    public static class PairGrouping extends WritableComparator {
+
+        public PairGrouping() {
+            super(PairWritable.class, true);
+        }
+
+        @Override
+        public int compare(Object a, Object b) {
+            PairWritable pair1 = (PairWritable) a;
+            PairWritable pair2 = (PairWritable) b;
+            return pair1.cookieId.compareTo(pair2.cookieId);
+        }
+    }
 
 }

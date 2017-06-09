@@ -18,7 +18,7 @@ import java.util.Map;
 /**
  * Created by root on 2017/1/10.
  */
-public class LogAnalyserMapper extends Mapper<LongWritable, Text, Text, Text> {
+public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, Text> {
     private static Logger logger = Logger.getLogger(LogAnalyserMapper.class);
     private static String[] fieldsColumn = null;
 
@@ -32,33 +32,12 @@ public class LogAnalyserMapper extends Mapper<LongWritable, Text, Text, Text> {
     protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
         try {
             Map<String, String> logMap = LogParser.logParserSDC(value.toString());
-            String res = getResStr(logMap);
+            String res = LogParser.getResStr(logMap, fieldsColumn);
             if (StringUtils.isNotBlank(res))
                 context.write(NullWritable.get(), new Text(res));
         } catch (LogParseException e) {
             logger.error(e.getMessage());
         }
-    }
-
-    /**
-     * 取程序输入参数 从logmap中取的参数字段值 取fieldsColumn差集放入Json
-     *
-     * @param logMap 一条日志的所有字段值
-     * @return 拼接结果字符串
-     */
-    private static String getResStr(Map<String, String> logMap) {
-        SplitValueBuilder svb = new SplitValueBuilder("\t");
-        for (String field : fieldsColumn) {
-            String value = "";
-            if (StringUtils.isNotBlank(logMap.get(field))) {
-                value = logMap.get(field);
-            }
-            logMap.remove(field);
-            svb.add(value);
-        }
-        Gson gson = new GsonBuilder().disableHtmlEscaping().create();
-        svb.add(gson.toJson(logMap));
-        return svb.toString();
     }
 }
 

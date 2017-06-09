@@ -1,5 +1,7 @@
 package com.udbac.hadoop.common;
 
+import org.apache.hadoop.conf.Configured;
+
 /**
  * Created by root on 2017/1/16.
  */
@@ -18,7 +20,7 @@ public class LogConstants {
     /**
      * 半小时的毫秒数
      */
-    public static final int HALFHOUR_OF_MILLISECONDS = 1800000;
+    public static final int HALFHOUR_OF_SECONDS = 1800;
 
     public static String INPUTARGSWARN =
             "Usage args:" + "\n" +
