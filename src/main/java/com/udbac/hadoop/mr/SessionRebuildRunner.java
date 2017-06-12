@@ -9,7 +9,9 @@ import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.compress.GzipCodec;
+import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
@@ -59,9 +61,11 @@ public class SessionRebuildRunner extends Configured implements Tool {
         //input & output
         TextInputFormat.addInputPath(job, new Path(inputPath));
         TextInputFormat.setInputPathFilter(job, RegexFilter.class);
+        TextInputFormat.setInputDirRecursive(job, true);
         TextOutputFormat.setOutputPath(job, new Path(outputPath));
-        LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);
         TextOutputFormat.setOutputCompressorClass(job, GzipCodec.class);
+        LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);
+
 
         if (job.waitForCompletion(true)) {
             System.out.println("-----job succeed-----");

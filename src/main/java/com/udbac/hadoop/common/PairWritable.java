@@ -57,7 +57,7 @@ public class PairWritable implements Writable, WritableComparable<PairWritable> 
 
         @Override
         public int getPartition(PairWritable pairWritable, Text text, int numPartitions) {
-            return pairWritable.cookieId.hashCode() % numPartitions;
+            return Math.abs(pairWritable.cookieId.hashCode()) % numPartitions;
         }
     }
 

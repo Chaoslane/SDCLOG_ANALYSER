@@ -21,9 +21,9 @@ import java.util.Map;
 /**
  * Created by root on 2017/6/6.
  */
-public class SessionRebuild{
+public class SessionRebuild {
 
-    static class SessionMapper extends Mapper<LongWritable, Text, PairWritable, Text>{
+    static class SessionMapper extends Mapper<LongWritable, Text, PairWritable, Text> {
         private static String[] fieldsColumn = null;
         private static Logger logger = Logger.getLogger(SessionMapper.class);
 
@@ -60,21 +60,22 @@ public class SessionRebuild{
                 List<Long> timeList = cookieTime.get(key.getCookieId());
                 if (null == timeList) {
                     timeList = new ArrayList<>();
-                }else if ((currTime - cookieTime.get(key.getCookieId()).get(0)) > LogConstants.HALFHOUR_OF_SECONDS) {
+                } else if ((currTime - cookieTime.get(key.getCookieId()).get(0)) > LogConstants.HALFHOUR_OF_SECONDS) {
                     timeList.clear();
                 }
 
                 for (Text v : values) {
                     timeList.add(currTime);
-                    cookieTime.put(key.getCookieId(),timeList);
+                    cookieTime.put(key.getCookieId(), timeList);
                     String ssid = key.getCookieId() + ":" + timeList.get(0);
                     //两条日志间隔时间
                     String timeInterval = String.valueOf(0);
                     if (timeList.size() > 1)
                         timeInterval = String.valueOf(
-                                timeList.get(timeList.size()-1) - timeList.get(timeList.size()-2));
-                    context.write(NullWritable.get(),new Text(
-                            key.getCookieId()+"\t"+ssid+"\t"+key.getDateTime()+"\t"+timeInterval));
+                                timeList.get(timeList.size() - 1) - timeList.get(timeList.size() - 2));
+                    Text text = new Text(
+                            key.getCookieId() + "\t" + ssid + "\t" + key.getDateTime() + "\t" + timeInterval + "\t" + v.toString());
+                    context.write(NullWritable.get(), text);
                 }
             } catch (LogParseException e) {
                 e.printStackTrace();

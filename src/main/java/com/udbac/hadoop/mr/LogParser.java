@@ -43,7 +43,7 @@ public class LogParser {
             // 拆解cs_uri_query、cs_cookie，生成参数表
             handleQuery(fields[7], "&");
             handleQuery(fields[12], ";+");
-        }else if (17 == fields.length){
+        } else if (17 == fields.length) {
             String dateTime = TimeUtil.handleTime(fields[2] + " " + fields[3]);
             logMap.put("date_time", dateTime);
             logMap.put("c_ip", fields[4]);
@@ -56,13 +56,13 @@ public class LogParser {
             logMap.put("cs_version", fields[12]);
             logMap.put("cs_useragent", fields[13]);
             logMap.put("WT.referer", fields[15]);
-            if (fields[14].length() == 30)
-                logMap.put("dcsid", fields[14].substring(26));
+            if (fields[16].length() == 30)
+                logMap.put("dcsid", fields[16].substring(26));
 
             // 拆解cs_uri_query、cs_cookie，生成参数表
             handleQuery(fields[9], "&");
             handleQuery(fields[14], ";+");
-        } else{
+        } else {
             if (fields[0].contains("#")) {
                 throw new LogParseException(
                         "Skip log comments:" + line);
@@ -71,7 +71,6 @@ public class LogParser {
                         "Unsupported Log Format:got " + fields.length + " fields, only support 15&17." + line);
             }
         }
-
 
 
         // PC和终端日志 解析Cookie串，尝试获取CookieID和SessionID
@@ -142,32 +141,9 @@ public class LogParser {
             logMap.remove("WT.vtvs");
         }
 
-        check();
         return logMap;
     }
 
-
-    private static void check() {
-
-//        logMap.put("prov", IPv42AreaUtil.getArea(logMap.get("c_ip")).split(",")[0]);
-//        logMap.put("city", IPv42AreaUtil.getArea(logMap.get("c_ip")).split(",")[1]);
-//        logMap.remove("c_ip");
-
-//        String ckid = logMap.get("WT_FPC.id");
-//        if (StringUtils.isNotBlank(ckid) && ckid.length() >= 32) {
-//            logMap.put("WT_FPC.id_hash", ckid.substring(0, 19)); //Cookie中解析出的用户ID的hash值
-//            logMap.put("WT_FPC.id_tick", ckid.substring(19)); //Cookie中解析出的Cookie创建时间
-//        }
-
-        // "WT.es", "WT.referer" 去掉参数部分
-        for (String key : new String[]{"WT.es", "WT.referer"}) {
-            String value = logMap.get(key);
-            if (StringUtils.isNotBlank(value)) {
-                value = value.split("\\?", 2)[0];
-                logMap.put(key, value);
-            }
-        }
-    }
 
     //解析query WT_FPC中的key value值，有必要的进行url解码
     private static void handleQuery(String query, String delimiter) {
@@ -178,7 +154,7 @@ public class LogParser {
                 String[] kv = item.split("=", 2);
                 if (kv.length == 2) {
                     String key = kv[0].replaceAll("(wt|Wt|wT)", "WT");
-                    String value = urlDecode(kv[1]);
+                    String value = kv[1].matches(".*((?:%[a-zA-Z\\d]{2})+).*") ? urlDecode(kv[1]) : kv[1];
                     logMap.put(key, value);
                 }
             }
@@ -188,13 +164,34 @@ public class LogParser {
     //URL解码
     private static String urlDecode(String strUrl) {
         try {
-            strUrl = strUrl.replace("\\x", "%").replace("%25", "%");
-            strUrl = URLDecoder.decode(strUrl, "utf-8");
-            return strUrl;
+            strUrl = URLDecoder.decode(
+                    strUrl.replace("\\x", "%").replace("%25", "%"), "utf-8");
         } catch (Exception e) {
             logger.warn("URL decode error :" + strUrl);
-            if (strUrl.length() > 50) strUrl = "";
-            return strUrl;
+            if (strUrl.contains("http"))
+                strUrl = strUrl.split("\\?", 2)[0];
+            else strUrl = null;
+        }
+        return strUrl;
+    }
+
+    private static void check() {
+//        logMap.put("prov", IPv42AreaUtil.getArea(logMap.get("c_ip")).split(",")[0]);
+//        logMap.put("city", IPv42AreaUtil.getArea(logMap.get("c_ip")).split(",")[1]);
+//        logMap.remove("c_ip");
+
+//        String ckid = logMap.get("WT_FPC.id");
+//        if (StringUtils.isNotBlank(ckid) && ckid.length() >= 32) {
+//            logMap.put("WT_FPC.id_hash", ckid.substring(0, 19)); //Cookie中解析出的用户ID的hash值
+//            logMap.put("WT_FPC.id_tick", ckid.substring(19)); //Cookie中解析出的Cookie创建时间
+//        }
+        // "WT.es", "WT.referer" 去掉参数部分
+        for (String key : new String[]{"WT.es", "WT.referer"}) {
+            String value = logMap.get(key);
+            if (StringUtils.isNotBlank(value)) {
+                value = value.split("\\?", 2)[0];
+                logMap.put(key, value);
+            }
         }
     }
 
@@ -204,7 +201,7 @@ public class LogParser {
      * @param logMap 一条日志的所有字段值
      * @return 拼接结果字符串
      */
-    public static String getResStr(Map<String, String> logMap , String[] fieldsColumn) {
+    public static String getResStr(Map<String, String> logMap, String[] fieldsColumn) {
         SplitValueBuilder svb = new SplitValueBuilder("\t");
         for (String field : fieldsColumn) {
             String value = "";
