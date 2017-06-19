@@ -1,6 +1,5 @@
 package com.udbac.hadoop.common;
 
-import org.apache.hadoop.conf.Configured;
 
 /**
  * Created by root on 2017/1/16.
@@ -29,4 +28,5 @@ public class LogConstants {
                     "<inputPath> " + "\n" +
                     "<outputPath> ";
 
+    public enum MyCounters {LINECOUNTER}
 }

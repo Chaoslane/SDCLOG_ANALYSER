@@ -1,10 +1,13 @@
 package com.udbac.hadoop.mr;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.udbac.hadoop.common.LogConstants;
 import com.udbac.hadoop.common.LogParseException;
 import com.udbac.hadoop.common.PairWritable;
+import com.udbac.hadoop.util.SplitValueBuilder;
 import com.udbac.hadoop.util.TimeUtil;
-import org.apache.hadoop.conf.Configuration;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -24,25 +27,32 @@ import java.util.Map;
 public class SessionRebuild {
 
     static class SessionMapper extends Mapper<LongWritable, Text, PairWritable, Text> {
-        private static String[] fieldsColumn = null;
         private static Logger logger = Logger.getLogger(SessionMapper.class);
+        private static Gson gson = null;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
-            context.getCounter(LogAnalyserRunner.MyCounters.ALLLINECOUNTER).increment(1);
-            Configuration conf = context.getConfiguration();
-            fieldsColumn = conf.get("fields.column").split(",");
+            gson = new GsonBuilder().disableHtmlEscaping().create();
         }
 
         @Override
         protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+            context.getCounter(LogConstants.MyCounters.LINECOUNTER).increment(1);
             try {
                 Map<String, String> logMap = LogParser.logParserSDC(value.toString());
-                String ckid = null == logMap.get("ckid") ? "" : logMap.get("ckid");
-                String date_time = null == logMap.get("date_time") ? "" : logMap.get("date_time");
-                String res = LogParser.getResStr(logMap, fieldsColumn);
-                context.write(
-                        new PairWritable(ckid, date_time), new Text(res));
+                String ckid = StringUtils.defaultIfEmpty(logMap.get("ckid"), "");
+                String date_time = StringUtils.defaultIfEmpty(logMap.get("date_time"), "");
+
+                SplitValueBuilder svb = new SplitValueBuilder("\t");
+                svb.add(logMap.get("dcsid"));
+
+                logMap.remove("dcsid");
+                logMap.remove("ckid");
+                logMap.remove("date_time");
+
+                String res = svb.add(gson.toJson(logMap)).build();
+                context.write(new PairWritable(ckid, date_time), new Text(res));
+
             } catch (LogParseException e) {
                 logger.error(e.getMessage());
             }

@@ -3,6 +3,7 @@ package com.udbac.hadoop.mr;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.udbac.hadoop.common.LogParseException;
+import com.udbac.hadoop.util.IPv42AreaUtil;
 import com.udbac.hadoop.util.SplitValueBuilder;
 import com.udbac.hadoop.util.TimeUtil;
 import org.apache.commons.lang.StringUtils;
@@ -63,15 +64,9 @@ public class LogParser {
             handleQuery(fields[9], "&");
             handleQuery(fields[14], ";+");
         } else {
-            if (fields[0].contains("#")) {
-                throw new LogParseException(
-                        "Skip log comments:" + line);
-            } else {
-                throw new LogParseException(
+            throw new LogParseException(
                         "Unsupported Log Format:got " + fields.length + " fields, only support 15&17." + line);
-            }
         }
-
 
         // PC和终端日志 解析Cookie串，尝试获取CookieID和SessionID
         String ckid = null;     // CookieID
@@ -148,14 +143,13 @@ public class LogParser {
     //解析query WT_FPC中的key value值，有必要的进行url解码
     private static void handleQuery(String query, String delimiter) {
         if (StringUtils.isNotBlank(query)) {
-            query = query.replaceAll("%3D|%3d", "=");
             String[] items = StringUtils.split(query, delimiter);
             for (String item : items) {
                 String[] kv = item.split("=", 2);
                 if (kv.length == 2) {
                     String key = kv[0].replaceAll("(wt|Wt|wT)", "WT");
                     String value = kv[1].matches(".*((?:%[a-zA-Z\\d]{2})+).*") ? urlDecode(kv[1]) : kv[1];
-                    logMap.put(key, value);
+                    logMap.put(key, StringUtils.isEmpty(value) ? null : value);
                 }
             }
         }
@@ -176,17 +170,17 @@ public class LogParser {
     }
 
     private static void check() {
-//        logMap.put("prov", IPv42AreaUtil.getArea(logMap.get("c_ip")).split(",")[0]);
-//        logMap.put("city", IPv42AreaUtil.getArea(logMap.get("c_ip")).split(",")[1]);
-//        logMap.remove("c_ip");
+        logMap.put("prov", IPv42AreaUtil.getArea(logMap.get("c_ip")).split(",")[0]);
+        logMap.put("city", IPv42AreaUtil.getArea(logMap.get("c_ip")).split(",")[1]);
 
 //        String ckid = logMap.get("WT_FPC.id");
 //        if (StringUtils.isNotBlank(ckid) && ckid.length() >= 32) {
 //            logMap.put("WT_FPC.id_hash", ckid.substring(0, 19)); //Cookie中解析出的用户ID的hash值
 //            logMap.put("WT_FPC.id_tick", ckid.substring(19)); //Cookie中解析出的Cookie创建时间
 //        }
+
         // "WT.es", "WT.referer" 去掉参数部分
-        for (String key : new String[]{"WT.es", "WT.referer"}) {
+        for (String key : new String[]{"WT.es"}) {
             String value = logMap.get(key);
             if (StringUtils.isNotBlank(value)) {
                 value = value.split("\\?", 2)[0];
@@ -194,28 +188,6 @@ public class LogParser {
             }
         }
     }
-
-    /**
-     * 取程序输入参数 从logmap中取的参数字段值 取fieldsColumn差集放入Json
-     *
-     * @param logMap 一条日志的所有字段值
-     * @return 拼接结果字符串
-     */
-    public static String getResStr(Map<String, String> logMap, String[] fieldsColumn) {
-        SplitValueBuilder svb = new SplitValueBuilder("\t");
-        for (String field : fieldsColumn) {
-            String value = "";
-            if (StringUtils.isNotBlank(logMap.get(field))) {
-                value = logMap.get(field);
-            }
-            svb.add(value);
-            logMap.remove(field);
-        }
-        Gson gson = new GsonBuilder().disableHtmlEscaping().create();
-        svb.add(gson.toJson(logMap));
-        return svb.toString();
-    }
-
 }
 
 

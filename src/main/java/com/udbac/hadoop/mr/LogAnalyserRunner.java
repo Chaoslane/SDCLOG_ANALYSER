@@ -19,7 +19,7 @@ import org.apache.hadoop.util.ToolRunner;
  * Created by root on 2017/3/23.
  */
 public class LogAnalyserRunner extends Configured implements Tool {
-    public enum MyCounters {ALLLINECOUNTER}
+
 
     public static void main(String[] args) throws Exception {
         int res = ToolRunner.run(new LogAnalyserRunner(), args);
@@ -59,7 +59,7 @@ public class LogAnalyserRunner extends Configured implements Tool {
         if (job.waitForCompletion(true)) {
             System.out.println("-----job succeed-----");
             long costTime = (job.getFinishTime() - job.getStartTime()) / 1000;
-            long linesum = job.getCounters().findCounter(MyCounters.ALLLINECOUNTER).getValue();
+            long linesum = job.getCounters().findCounter(LogConstants.MyCounters.LINECOUNTER).getValue();
             System.out.println(
                     linesum + " lines take:" + costTime + "s " + linesum / costTime + " line/s");
         }
