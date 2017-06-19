@@ -5,6 +5,8 @@ import com.google.gson.GsonBuilder;
 import com.udbac.hadoop.common.LogConstants;
 import com.udbac.hadoop.common.LogParseException;
 import com.udbac.hadoop.common.PairWritable;
+import com.udbac.hadoop.util.IPCacheParser;
+import com.udbac.hadoop.util.IPParser;
 import com.udbac.hadoop.util.SplitValueBuilder;
 import com.udbac.hadoop.util.TimeUtil;
 import org.apache.commons.lang.StringUtils;
@@ -29,9 +31,11 @@ public class SessionRebuild {
     static class SessionMapper extends Mapper<LongWritable, Text, PairWritable, Text> {
         private static Logger logger = Logger.getLogger(SessionMapper.class);
         private static Gson gson = null;
+        private static IPCacheParser ipParser = null;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
+            ipParser = IPCacheParser.getSingleIPParser();
             gson = new GsonBuilder().disableHtmlEscaping().create();
         }
 
@@ -40,6 +44,11 @@ public class SessionRebuild {
             context.getCounter(LogConstants.MyCounters.LINECOUNTER).increment(1);
             try {
                 Map<String, String> logMap = LogParser.logParserSDC(value.toString());
+                if (true) {
+                    logMap.put("prov", ipParser.getArea(logMap.get("c_ip")).split(",")[0]);
+                    logMap.put("city", ipParser.getArea(logMap.get("c_ip")).split(",")[1]);
+                }
+
                 String ckid = StringUtils.defaultIfEmpty(logMap.get("ckid"), "");
                 String date_time = StringUtils.defaultIfEmpty(logMap.get("date_time"), "");
 

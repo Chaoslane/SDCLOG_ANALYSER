@@ -1,10 +1,6 @@
 package com.udbac.hadoop.mr;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.udbac.hadoop.common.LogParseException;
-import com.udbac.hadoop.util.IPv42AreaUtil;
-import com.udbac.hadoop.util.SplitValueBuilder;
 import com.udbac.hadoop.util.TimeUtil;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
@@ -26,8 +22,8 @@ public class LogParser {
 
         if (15 == fields.length) {
             // SDC日志采用格林威治时间 调整时区
-            String dateTime = TimeUtil.handleTime(fields[0] + " " + fields[1]);
-            logMap.put("date_time", dateTime);
+            logMap.put("date_time",
+                    TimeUtil.handleTime(fields[0] + " " + fields[1]));
             logMap.put("c_ip", fields[2]);
             logMap.put("cs_username", fields[3]);
             logMap.put("cs_host", fields[4]);
@@ -45,8 +41,8 @@ public class LogParser {
             handleQuery(fields[7], "&");
             handleQuery(fields[12], ";+");
         } else if (17 == fields.length) {
-            String dateTime = TimeUtil.handleTime(fields[2] + " " + fields[3]);
-            logMap.put("date_time", dateTime);
+            logMap.put("date_time",
+                    TimeUtil.handleTime(fields[2] + " " + fields[3]));
             logMap.put("c_ip", fields[4]);
             logMap.put("cs_username", fields[5]);
             logMap.put("cs_host", fields[6]);
@@ -93,10 +89,11 @@ public class LogParser {
                 //}
                 //SDC日志，Cookie字段中的用户ID，与WT.vtid、WT.co_f相同
                 //logMap.put("WT_FPC.id", c_id);
+
                 //SDC日志，Session最后一次访问时间，格式与WT_FPC.ss相同
-                //logMap.put("WT_FPC.lv", c_lv);
+                logMap.put("WT_FPC.lv", c_lv);
                 //SDC日志，Session起始时间，time_t值后加3位毫秒值
-                //logMap.put("WT_FPC.ss", c_ss);
+                logMap.put("WT_FPC.ss", c_ss);
 
                 if (StringUtils.isNumeric(c_ss) && StringUtils.isNumeric(c_lv)) {
                     Long ss = Long.parseLong(c_ss);
@@ -135,7 +132,7 @@ public class LogParser {
             logMap.remove("WT.vt_sid");
             logMap.remove("WT.vtvs");
         }
-
+        check();
         return logMap;
     }
 
@@ -170,14 +167,6 @@ public class LogParser {
     }
 
     private static void check() {
-        logMap.put("prov", IPv42AreaUtil.getArea(logMap.get("c_ip")).split(",")[0]);
-        logMap.put("city", IPv42AreaUtil.getArea(logMap.get("c_ip")).split(",")[1]);
-
-//        String ckid = logMap.get("WT_FPC.id");
-//        if (StringUtils.isNotBlank(ckid) && ckid.length() >= 32) {
-//            logMap.put("WT_FPC.id_hash", ckid.substring(0, 19)); //Cookie中解析出的用户ID的hash值
-//            logMap.put("WT_FPC.id_tick", ckid.substring(19)); //Cookie中解析出的Cookie创建时间
-//        }
 
         // "WT.es", "WT.referer" 去掉参数部分
         for (String key : new String[]{"WT.es"}) {
@@ -187,6 +176,13 @@ public class LogParser {
                 logMap.put(key, value);
             }
         }
+
+//        String ckid = logMap.get("WT_FPC.id");
+//        if (StringUtils.isNotBlank(ckid) && ckid.length() >= 32) {
+//            logMap.put("WT_FPC.id_hash", ckid.substring(0, 19)); //Cookie中解析出的用户ID的hash值
+//            logMap.put("WT_FPC.id_tick", ckid.substring(19)); //Cookie中解析出的Cookie创建时间
+//        }
+
     }
 }
 
