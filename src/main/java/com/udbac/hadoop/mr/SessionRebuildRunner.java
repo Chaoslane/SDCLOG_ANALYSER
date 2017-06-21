@@ -27,7 +27,8 @@ public class SessionRebuildRunner extends Configured implements Tool {
     }
 
     private boolean isParamsBlank(Configuration conf) {
-        return StringUtils.isBlank(conf.get("filename.pattern"));
+        return StringUtils.isBlank(conf.get("filename.pattern"))
+                || StringUtils.isBlank(conf.get("fields.column"));
     }
 
     @Override
@@ -69,7 +70,7 @@ public class SessionRebuildRunner extends Configured implements Tool {
             long costTime = (job.getFinishTime() - job.getStartTime()) / 1000;
             long linesum = job.getCounters().findCounter(LogConstants.MyCounters.LINECOUNTER).getValue();
             System.out.println(
-                    linesum + " lines take:" + costTime + "s " + linesum / costTime + " line/s");
+                    linesum + " lines take:" + costTime + "s " + linesum / costTime + " line/s ");
         }
         return job.waitForCompletion(true) ? 0 : 1;
     }
