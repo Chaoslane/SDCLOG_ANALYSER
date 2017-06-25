@@ -64,7 +64,6 @@ public class SessionRebuildRunner extends Configured implements Tool {
         TextOutputFormat.setOutputCompressorClass(job, GzipCodec.class);
         LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);
 
-
         if (job.waitForCompletion(true)) {
             System.out.println("-----job succeed-----");
             long costTime = (job.getFinishTime() - job.getStartTime()) / 1000;

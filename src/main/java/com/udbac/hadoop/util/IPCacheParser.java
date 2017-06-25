@@ -2,6 +2,7 @@ package com.udbac.hadoop.util;
 
 import org.apache.commons.collections.map.LRUMap;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -9,18 +10,11 @@ import java.util.Map;
  */
 public class IPCacheParser extends IPParser {
 
-    public IPCacheParser() {
+    // Suppresses default constructor, ensuring non-instantiability.
+    private IPCacheParser() {
         super();
     }
 
-    //单例模式
-    public static IPCacheParser getSingleIPParser() {
-        return IP2AreaParserSingle.INSTANCE;
-    }
-
-    private static class IP2AreaParserSingle {
-        private static IPCacheParser INSTANCE = new IPCacheParser();
-    }
     // cache
     private static Map<String, String> cacheIPkv = null;
 
@@ -37,5 +31,12 @@ public class IPCacheParser extends IPParser {
         return area;
     }
 
+    //单例模式
+    public static IPCacheParser getSingleIPParser() {
+        return IP2AreaParserSingle.INSTANCE;
+    }
 
+    private static class IP2AreaParserSingle {
+        private static IPCacheParser INSTANCE = new IPCacheParser();
+    }
 }

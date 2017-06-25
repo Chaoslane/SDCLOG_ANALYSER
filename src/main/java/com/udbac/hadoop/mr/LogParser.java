@@ -112,9 +112,10 @@ public class LogParser {
         logMap.put(version,   fields[10 + offset]);
         logMap.put(userAgent, fields[11 + offset]);
         logMap.put(referer,   fields[13 + offset]);
-        if (fields[14 + offset].length() == 30)
-            logMap.put(dcsid, fields[14 + offset].substring(26));
-
+        if (fields[14 + offset].length() == 30) {
+            logMap.put(dcsid,   fields[14 + offset].substring(26));
+            logMap.put(dcsid_l, fields[14 + offset]);
+        }
         // 拆解cs_uri_query、cs_cookie，生成参数表
         handleQuery(fields[7 + offset], "&");
         handleQuery(fields[12 + offset], ";+");
@@ -163,6 +164,7 @@ public class LogParser {
     private static final String userAgent = "cs_useragent";
     private static final String referer   = "WT.referer";
     private static final String dcsid     = "dcsid";
+    private static final String dcsid_l   = "dcsid_l";
     // cookieid
     private static final String[] ckids = {"WT.vtid", "WT.co_f"};
 
