@@ -18,25 +18,41 @@ import java.util.regex.Pattern;
  */
 public class TimeUtil {
 
+    private static SimpleDateFormat dateTimeFormat = new SimpleDateFormat(LogConstants.DATETIME_FORMAT);
+
     /**
      * 采集机时区问题 时间+8 hour 保证日志时间范围是1天内
+     *
      * @param dateTime datetime
      * @return datetime
      */
     public static String handleTime(String dateTime) throws LogParseException {
-        String realtime = null;
-        AtomicReference<Calendar> calendar;
-        calendar = new AtomicReference<>(Calendar.getInstance());
-        SimpleDateFormat dateFormat = new SimpleDateFormat(LogConstants.DATETIME_FORMAT);
         try {
-            Date date = dateFormat.parse(dateTime);
-            calendar.get().setTime(date);
-            calendar.get().add(Calendar.HOUR_OF_DAY, 8);
-            realtime = (new SimpleDateFormat(LogConstants.DATETIME_FORMAT)).format(calendar.get().getTime());
+            Date date = new Date(dateTimeFormat.parse(dateTime).getTime() + 8 * 3600 * 1000);
+            return dateTimeFormat.format(date);
         } catch (ParseException e) {
-            throw new LogParseException("Unsupported datetime format:" + dateTime,e);
+            throw new LogParseException("Unsupported datetime format:" + dateTime, e);
         }
-        return realtime;
+    }
+
+    /**
+     * 将指定格式的时间字符串转换为时间戳
+     */
+    public static long parseString2Long(String input) throws LogParseException {
+        try {
+            return dateTimeFormat.parse(input).getTime();
+        } catch (ParseException e) {
+            throw new LogParseException("Unsupported datetime format:" + input);
+        }
+    }
+
+    /**
+     * 将时间戳转换为指定格式的字符串
+     */
+    public static String parseLong2String(long input) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(input);
+        return dateTimeFormat.format(calendar.getTime());
     }
 
     /**
@@ -56,44 +72,20 @@ public class TimeUtil {
         return result;
     }
 
-
     /**
-     * 将yyyy-MM-dd格式的时间字符串转换为时间戳
+     * 取得前一天日期
      */
-    public static long parseStringDate2Long(String input) throws LogParseException {
-        return parseString2Long(input, LogConstants.DATETIME_FORMAT);
+    public static String getYesterday(String dateStr) throws ParseException {
+        SimpleDateFormat sdf = new SimpleDateFormat(LogConstants.DATE_FORMAT);
+        Date date = new Date(sdf.parse(dateStr).getTime() - 24 * 3600 * 1000);
+        return sdf.format(date);
     }
 
-
     /**
-     * 将时间戳转换为yyyy-MM-dd格式的时间字符串
+     * 修改时间format
      */
-    public static String parseLong2StringDate(long input) {
-        return parseLong2String(input, LogConstants.DATETIME_FORMAT);
+    public static String formatDate(String source, String oldPattern, String newPattern) throws ParseException {
+        Date date = new SimpleDateFormat(oldPattern).parse(source);
+        return new SimpleDateFormat(newPattern).format(date);
     }
-
-
-    /**
-     * 将时间戳转换为指定格式的字符串
-     */
-    public static String parseLong2String(long input, String pattern) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(input);
-        return new SimpleDateFormat(pattern).format(calendar.getTime());
-    }
-
-
-    /**
-     * 将指定格式的时间字符串转换为时间戳
-     */
-    public static long parseString2Long(String input, String pattern) throws LogParseException {
-        Date date;
-        try {
-            date = new SimpleDateFormat(pattern).parse(input);
-        } catch (ParseException e) {
-            throw new LogParseException("Unsupported datetime format:" + input);
-        }
-        return date.getTime();
-    }
-
 }

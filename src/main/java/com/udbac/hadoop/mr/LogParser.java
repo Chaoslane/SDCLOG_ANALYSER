@@ -3,27 +3,30 @@ package com.udbac.hadoop.mr;
 import com.udbac.hadoop.common.LogParseException;
 import com.udbac.hadoop.util.TimeUtil;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
 import org.apache.log4j.Logger;
 
 import java.net.URLDecoder;
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Created by root on 2017/1/5.
  */
-public class LogParser {
-    private static Map<String, String> logMap = new HashMap<>(100);
+public class LogParser extends Configured{
+    private static Map<String, String> logMap = new HashMap<>(30);
     private static Logger logger = Logger.getLogger(LogParser.class);
 
-    static Map<String, String> logParserSDC(String line) throws LogParseException {
+    static Map<String, String> logParserSDC(String line, String dates) throws LogParseException {
         logMap.clear();
         String[] fields = line.split(" ");
 
         if (15 == fields.length) {
-            handleRawFields(fields,0);
+            handleRawFields(fields, 0, dates);
         } else if (17 == fields.length) {
-            handleRawFields(fields, 2);
+            handleRawFields(fields, 2, dates);
         } else {
             throw new LogParseException(
                     "Unsupported Log Format:got " + fields.length + " fields, only support 15&17." + line);
@@ -99,21 +102,24 @@ public class LogParser {
         return logMap;
     }
 
-    private static void handleRawFields(String[] fields, int offset) throws LogParseException {
+    private static void handleRawFields(String[] fields, int offset, String dates) throws LogParseException {
+        if (!dates.contains(fields[offset])) {
+            throw new LogParseException("Unsupport date :" + fields[offset]);
+        }
         logMap.put(dateTime,
-                TimeUtil.handleTime(fields[0 + offset] + " " + fields[1 + offset]));
-        logMap.put(ip,        fields[2 +  offset]);
-        logMap.put(userName,  fields[3 +  offset]);
-        logMap.put(host,      fields[4 +  offset]);
-        logMap.put(method,    fields[5 +  offset]);
-        logMap.put(stem,      fields[6 +  offset]);
-        logMap.put(status,    fields[8 +  offset]);
-        logMap.put(bytes,     fields[9 +  offset]);
-        logMap.put(version,   fields[10 + offset]);
+                TimeUtil.handleTime(fields[offset] + " " + fields[1 + offset]));
+        logMap.put(ip, fields[2 + offset]);
+        logMap.put(userName, fields[3 + offset]);
+        logMap.put(host, fields[4 + offset]);
+        logMap.put(method, fields[5 + offset]);
+        logMap.put(stem, fields[6 + offset]);
+        logMap.put(status, fields[8 + offset]);
+        logMap.put(bytes, fields[9 + offset]);
+        logMap.put(version, fields[10 + offset]);
         logMap.put(userAgent, fields[11 + offset]);
-        logMap.put(referer,   fields[13 + offset]);
+        logMap.put(referer, fields[13 + offset]);
         if (fields[14 + offset].length() == 30) {
-            logMap.put(dcsid,   fields[14 + offset].substring(26));
+            logMap.put(dcsid, fields[14 + offset].substring(26));
             logMap.put(dcsid_l, fields[14 + offset]);
         }
         // 拆解cs_uri_query、cs_cookie，生成参数表
@@ -152,19 +158,20 @@ public class LogParser {
     }
 
 
-    private static final String dateTime  = "date_time";
-    private static final String ip        = "c_ip";
-    private static final String userName  = "cs_username";
-    private static final String host      = "cs_host";
-    private static final String method    = "cs_method";
-    private static final String stem      = "cs_uri_stem";
-    private static final String status    = "cs_status";
-    private static final String bytes     = "cs_bytes";
-    private static final String version   = "cs_version";
+
+    private static final String dateTime = "date_time";
+    private static final String ip = "c_ip";
+    private static final String userName = "cs_username";
+    private static final String host = "cs_host";
+    private static final String method = "cs_method";
+    private static final String stem = "cs_uri_stem";
+    private static final String status = "cs_status";
+    private static final String bytes = "cs_bytes";
+    private static final String version = "cs_version";
     private static final String userAgent = "cs_useragent";
-    private static final String referer   = "WT.referer";
-    private static final String dcsid     = "dcsid";
-    private static final String dcsid_l   = "dcsid_l";
+    private static final String referer = "WT.referer";
+    private static final String dcsid = "dcsid";
+    private static final String dcsid_l = "dcsid_l";
     // cookieid
     private static final String[] ckids = {"WT.vtid", "WT.co_f"};
 

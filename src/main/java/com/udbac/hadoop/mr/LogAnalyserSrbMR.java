@@ -15,6 +15,8 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,24 +25,25 @@ import java.util.Map;
 /**
  * Created by root on 2017/6/6.
  */
-public class SessionRebuild {
+public class LogAnalyserSrbMR {
 
     static class SessionMapper extends Mapper<LongWritable, Text, PairWritable, Text> {
         private static Logger logger = Logger.getLogger(SessionMapper.class);
-        private static IPCacheParser ipParser = null;
+        private static IPCacheParser ipParser = IPCacheParser.getSingleIPParser();
         private static String[] fieldsColumn = null;
+        private static String dates = null;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
-            ipParser = IPCacheParser.getSingleIPParser();
             fieldsColumn = context.getConfiguration().get("fields.column").split(",");
+            dates = LogAnalyserRunner.validDates;
         }
 
         @Override
         protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
             context.getCounter(LogConstants.MyCounters.LINECOUNTER).increment(1);
             try {
-                Map<String, String> logMap = LogParser.logParserSDC(value.toString());
+                Map<String, String> logMap = LogParser.logParserSDC(value.toString(),dates);
                 logMap.put("prov", ipParser.getArea(logMap.get("c_ip")).split(",")[0]);
                 logMap.put("city", ipParser.getArea(logMap.get("c_ip")).split(",")[1]);
 
@@ -72,7 +75,7 @@ public class SessionRebuild {
         @Override
         protected void reduce(PairWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             try {
-                Long currTime = TimeUtil.parseStringDate2Long(key.getDateTime()) / 1000;
+                Long currTime = TimeUtil.parseString2Long(key.getDateTime()) / 1000;
 
                 List<Long> timeList = cookieTime.get(key.getCookieId());
                 if (null == timeList) {
