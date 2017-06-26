@@ -28,5 +28,5 @@ public class LogConstants {
                     "<inputPath> " + "\n" +
                     "<outputPath> ";
 
-    public enum MyCounters {LINECOUNTER}
+    public enum MyCounters {LINECOUNTER,FAILEDMAPPERLINE,FAILEDREDUCERLINE}
 }
