@@ -31,19 +31,24 @@ public class LogAnalyserSrbMR {
         private static Logger logger = Logger.getLogger(SessionMapper.class);
         private static IPCacheParser ipParser = IPCacheParser.getSingleIPParser();
         private static String[] fieldsColumn = null;
-        private static String dates = null;
+        private static String validDates = null;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             fieldsColumn = context.getConfiguration().get("fields.column").split(",");
-            dates = LogAnalyserRunner.validDates;
+            validDates = context.getConfiguration().get("logs.date");
         }
 
         @Override
         protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
             context.getCounter(LogConstants.MyCounters.LINECOUNTER).increment(1);
             try {
-                Map<String, String> logMap = LogParser.logParserSDC(value.toString(),dates);
+                Map<String, String> logMap = LogParser.logParserSDC(value.toString());
+
+                if (null != validDates && !validDates.contains(logMap.get("date_time").split(" ")[0])) {
+                    throw new LogParseException("Unsupport date format: " + logMap.get("date_time"));
+                }
+
                 logMap.put("prov", ipParser.getArea(logMap.get("c_ip")).split(",")[0]);
                 logMap.put("city", ipParser.getArea(logMap.get("c_ip")).split(",")[1]);
 

@@ -85,7 +85,7 @@ public class IPParser {
         }
         int start = 0;
         int end = sortedList.size() - 1;
-        while (start <= end) {
+        while (start < end) {
             mid = (end - start) / 2 + start;
             if (ipInt < sortedList.get(mid)) {
                 end = mid - 1;

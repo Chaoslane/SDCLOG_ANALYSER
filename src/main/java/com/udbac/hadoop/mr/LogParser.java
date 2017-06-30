@@ -19,14 +19,14 @@ public class LogParser extends Configured{
     private static Map<String, String> logMap = new HashMap<>(30);
     private static Logger logger = Logger.getLogger(LogParser.class);
 
-    static Map<String, String> logParserSDC(String line, String dates) throws LogParseException {
+    static Map<String, String> logParserSDC(String line) throws LogParseException {
         logMap.clear();
         String[] fields = line.split(" ");
 
         if (15 == fields.length) {
-            handleRawFields(fields, 0, dates);
+            handleRawFields(fields, 0);
         } else if (17 == fields.length) {
-            handleRawFields(fields, 2, dates);
+            handleRawFields(fields, 2);
         } else {
             throw new LogParseException(
                     "Unsupported Log Format:got " + fields.length + " fields, only support 15&17." + line);
@@ -102,10 +102,7 @@ public class LogParser extends Configured{
         return logMap;
     }
 
-    private static void handleRawFields(String[] fields, int offset, String dates) throws LogParseException {
-        if (!dates.contains(fields[offset])) {
-            throw new LogParseException("Unsupport date :" + fields[offset]);
-        }
+    private static void handleRawFields(String[] fields, int offset) throws LogParseException {
         logMap.put(dateTime,
                 TimeUtil.handleTime(fields[offset] + " " + fields[1 + offset]));
         logMap.put(ip, fields[2 + offset]);
@@ -136,8 +133,10 @@ public class LogParser extends Configured{
                 String[] kv = item.split("=", 2);
                 if (kv.length == 2) {
                     String key = kv[0].replaceAll("(wt|Wt|wT)", "WT");
-                    String value = kv[1].matches(".*((?:%[a-zA-Z\\d]{2})+).*") ? urlDecode(kv[1]) : kv[1];
-                    logMap.put(key, StringUtils.isEmpty(value) ? null : value);
+                    if ("".equals(kv[1])) {
+                        String value = kv[1].matches(".*((?:%[a-zA-Z\\d]{2})+).*") ? urlDecode(kv[1]) : kv[1];
+                        logMap.put(key, StringUtils.isEmpty(value) ? null : value);
+                    }
                 }
             }
         }

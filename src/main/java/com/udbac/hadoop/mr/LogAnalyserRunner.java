@@ -17,30 +17,32 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
-import java.text.ParseException;
 
 /**
  * Created by root on 2017/6/8.
  */
 public class LogAnalyserRunner extends Configured implements Tool {
 
-    public String validDates = null;
-    public String getValidDates() {return validDates;}
-
     @Override
     public void setConf(Configuration conf) {
         super.setConf(conf);
 //        conf.set("fs.defaultFS", "hdfs://192.168.4.3:8022");
 //        conf.set("io.compression.codecs", "io.sensesecure.hadoop.xz.XZCodec");
-    }
+}
 
     @Override
     public int run(String[] args) throws Exception {
         Configuration conf = getConf();
-        validDates = getValidDates(conf);
         if (args.length != 2 || isParamsInvalid(conf)) {
             System.err.println(LogConstants.INPUTARGSWARN);
             System.exit(-1);
+        }
+
+        // 从文件正则中获取日期转换格式判断日期是否合法
+        String date = conf.get("filename.pattern").replaceAll("[^0-9]", "");
+        if (date.length() == 8) {
+            date = TimeUtil.formatDate(date, "yyyyMMdd", "yyyy-MM-dd");
+            conf.set("logs.date", date + " " + TimeUtil.getTommorow(date));
         }
 
         Job job ;
@@ -89,21 +91,7 @@ public class LogAnalyserRunner extends Configured implements Tool {
         String pattern = conf.get("filename.pattern");
         String column = conf.get("fields.column");
         return StringUtils.isBlank(pattern)
-                || StringUtils.isBlank(column)
-                || pattern.replaceAll("[^0-9]", "").length() != 8;
-    }
-
-    private static String getValidDates(Configuration conf) {
-        String dates = null;
-        String regexDate = conf.get("filename.pattern").replaceAll("[^0-9]", "");
-        try {
-            String date = TimeUtil.formatDate(regexDate, "yyyymmdd", "yyyy-mm-dd");
-            dates = date+TimeUtil.getYesterday(date);
-        } catch (ParseException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e.getMessage());
-        }
-        return dates;
+                || StringUtils.isBlank(column);
     }
 
     public static void main(String[] args) throws Exception {

@@ -25,20 +25,18 @@ public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, 
     private static Logger logger = Logger.getLogger(LogAnalyserMapper.class);
     private static String[] fieldsColumn = null;
     private static Gson gson = null;
-    private static String dates = null;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         fieldsColumn = context.getConfiguration().get("fields.column").split(",");
         gson = new GsonBuilder().disableHtmlEscaping().create();
         // 获取输入日期参数
-        dates = LogAnalyserRunner.validDates;
     }
 
     protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
         context.getCounter(LogConstants.MyCounters.LINECOUNTER).increment(1);
         try {
-            Map<String, String> logMap = LogParser.logParserSDC(value.toString(),dates);
+            Map<String, String> logMap = LogParser.logParserSDC(value.toString());
 
             SplitValueBuilder svb = new SplitValueBuilder("\t");
             for (String field : fieldsColumn) {

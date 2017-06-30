@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
  */
 public class TimeUtil {
 
+
     private static SimpleDateFormat dateTimeFormat = new SimpleDateFormat(LogConstants.DATETIME_FORMAT);
 
     /**
@@ -75,9 +76,9 @@ public class TimeUtil {
     /**
      * 取得前一天日期
      */
-    public static String getYesterday(String dateStr) throws ParseException {
+    public static String getTommorow(String dateStr) throws ParseException {
         SimpleDateFormat sdf = new SimpleDateFormat(LogConstants.DATE_FORMAT);
-        Date date = new Date(sdf.parse(dateStr).getTime() - 24 * 3600 * 1000);
+        Date date = new Date(sdf.parse(dateStr).getTime() + 24 * 3600 * 1000);
         return sdf.format(date);
     }
 
