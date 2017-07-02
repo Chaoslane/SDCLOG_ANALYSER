@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * Created by root on 2017/1/5.
  */
-public class LogParser extends Configured{
+public class LogParser extends Configured {
     private static Map<String, String> logMap = new HashMap<>(30);
     private static Logger logger = Logger.getLogger(LogParser.class);
 
@@ -131,12 +131,10 @@ public class LogParser extends Configured{
             String[] items = StringUtils.split(query, delimiter);
             for (String item : items) {
                 String[] kv = item.split("=", 2);
-                if (kv.length == 2) {
+                if (kv.length == 2 && StringUtils.isNotEmpty(kv[1])) {
                     String key = kv[0].replaceAll("(wt|Wt|wT)", "WT");
-                    if ("".equals(kv[1])) {
-                        String value = kv[1].matches(".*((?:%[a-zA-Z\\d]{2})+).*") ? urlDecode(kv[1]) : kv[1];
-                        logMap.put(key, StringUtils.isEmpty(value) ? null : value);
-                    }
+                    String value = kv[1].matches(".*((?:%[a-zA-Z\\d]{2})+).*") ? urlDecode(kv[1]) : kv[1];
+                    logMap.put(key, StringUtils.isEmpty(value) ? null : value);
                 }
             }
         }
@@ -155,7 +153,6 @@ public class LogParser extends Configured{
         }
         return strUrl;
     }
-
 
 
     private static final String dateTime = "date_time";
