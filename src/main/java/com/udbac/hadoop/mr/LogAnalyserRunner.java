@@ -27,7 +27,7 @@ public class LogAnalyserRunner extends Configured implements Tool {
     public void setConf(Configuration conf) {
         super.setConf(conf);
 //        conf.set("fs.defaultFS", "hdfs://192.168.4.3:8022");
-//        conf.set("io.compression.codecs", "io.sensesecure.hadoop.xz.XZCodec");
+        conf.set("io.compression.codecs", "io.sensesecure.hadoop.xz.XZCodec");
 }
 
     @Override

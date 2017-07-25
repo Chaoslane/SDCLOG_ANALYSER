@@ -86,7 +86,7 @@ public class PairWritable implements Writable, WritableComparable<PairWritable> 
         }
 
         @Override
-        public int compare(Object a, Object b) {
+        public int compare(WritableComparable a, WritableComparable b) {
             PairWritable pair1 = (PairWritable) a;
             PairWritable pair2 = (PairWritable) b;
             return pair1.cookieId.compareTo(pair2.cookieId);
