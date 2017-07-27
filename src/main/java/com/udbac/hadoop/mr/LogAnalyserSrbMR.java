@@ -2,6 +2,7 @@ package com.udbac.hadoop.mr;
 
 import com.udbac.hadoop.common.LogConstants;
 import com.udbac.hadoop.common.LogParseException;
+import com.udbac.hadoop.common.LogParser;
 import com.udbac.hadoop.common.PairWritable;
 import com.udbac.hadoop.util.IPCacheParser;
 import com.udbac.hadoop.util.SplitValueBuilder;

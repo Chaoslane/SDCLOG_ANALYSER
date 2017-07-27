@@ -4,10 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.udbac.hadoop.common.LogConstants;
 import com.udbac.hadoop.common.LogParseException;
+import com.udbac.hadoop.common.LogParser;
 import com.udbac.hadoop.util.SplitValueBuilder;
-import com.udbac.hadoop.util.TimeUtil;
 import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -15,7 +14,6 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.Map;
 
 /**

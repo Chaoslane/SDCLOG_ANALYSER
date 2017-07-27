@@ -79,28 +79,31 @@ public class IPParser {
      * @return index
      */
     private Integer searchIP(List<Integer> sortedList, Integer ipInt) {
-        int mid = sortedList.size() / 2;
-        if (sortedList.get(mid) == ipInt) {
-            return mid;
-        }
-        int start = 0;
-        int end = sortedList.size() - 1;
-        while (start < end) {
-            mid = (end - start) / 2 + start;
+        int low = 0;
+        int high = sortedList.size() - 1;
+
+        while (low <= high) {
+            int mid = (low + high) >>> 1;
+
             if (ipInt < sortedList.get(mid)) {
-                end = mid - 1;
                 if (ipInt > sortedList.get(mid - 1)) {
                     return mid - 1;
                 }
+                high = mid - 1;
             } else if (ipInt > sortedList.get(mid)) {
-                start = mid + 1;
                 if (ipInt < sortedList.get(mid + 1)) {
                     return mid;
                 }
+                low = mid + 1;
             } else {
                 return mid;
             }
         }
         return 0;
     }
+
+//    public static void main(String[] args) {
+//        IPParser ipParser = new IPParser();
+//        System.out.println(ipParser.getArea("0.0.0.0"));
+//    }
 }

@@ -19,6 +19,11 @@ public class RegexFilter extends Configured implements PathFilter {
     private static Logger logger = Logger.getLogger(RegexFilter.class);
 
     @Override
+    public Configuration getConf() {
+        return super.getConf();
+    }
+
+    @Override
     public boolean accept(Path path) {
         try {
             FileSystem fs = FileSystem.get(getConf());

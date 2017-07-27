@@ -1,16 +1,17 @@
-package com.udbac.hadoop.mr;
+package com.udbac.hadoop.common;
 
-import com.udbac.hadoop.common.LogParseException;
 import com.udbac.hadoop.util.TimeUtil;
 import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.log4j.Logger;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.text.ParseException;
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by root on 2017/1/5.
@@ -19,7 +20,7 @@ public class LogParser extends Configured {
     private static Map<String, String> logMap = new HashMap<>(30);
     private static Logger logger = Logger.getLogger(LogParser.class);
 
-    static Map<String, String> logParserSDC(String line) throws LogParseException {
+    public static Map<String, String> logParserSDC(String line) throws LogParseException {
         logMap.clear();
         String[] fields = line.split(" ");
 
@@ -170,6 +171,20 @@ public class LogParser extends Configured {
     private static final String dcsid_l = "dcsid_l";
     // cookieid
     private static final String[] ckids = {"WT.vtid", "WT.co_f"};
+
+    public static void main(String[] args) throws UnsupportedEncodingException {
+        final Pattern utf8Pattern = Pattern.compile("^([\\x01-\\x7f]|[\\xc0-\\xdf][\\x80-\\xbf]|[\\xe0-\\xef][\\x80-\\xbf]{2}|[\\xf0-\\xf7][\\x80-\\xbf]{3}|[\\xf8-\\xfb][\\x80-\\xbf]{4}|[\\xfc-\\xfd][\\x80-\\xbf]{5})+$");
+        final Pattern publicPattern = Pattern.compile("^([\\x01-\\x7f]|[\\xc0-\\xdf][\\x80-\\xbf])+$");
+        String str1 = "%E4%B8%AD%E5%9B%BD%E7%A7%BB%E5%8A%A8";
+        String str2 = "%D6%D0%B9%FA%D2%C6%B6%AF";
+        Matcher matcher = publicPattern.matcher(str1);
+        if (matcher.matches()) {
+            System.out.println("GBK");
+        }
+
+        System.out.println(URLEncoder.encode("四川移动","utf-8"));
+        System.out.println(URLEncoder.encode("中国移动","GB2312"));
+    }
 
 }
 

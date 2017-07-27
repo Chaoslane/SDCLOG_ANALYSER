@@ -23,12 +23,12 @@ import org.apache.hadoop.util.ToolRunner;
  */
 public class LogAnalyserRunner extends Configured implements Tool {
 
-    @Override
-    public void setConf(Configuration conf) {
-        super.setConf(conf);
+//    @Override
+//    public void setConf(Configuration conf) {
+//        super.setConf(conf);
 //        conf.set("fs.defaultFS", "hdfs://192.168.4.3:8022");
-        conf.set("io.compression.codecs", "io.sensesecure.hadoop.xz.XZCodec");
-}
+//        conf.set("io.compression.codecs", "io.sensesecure.hadoop.xz.XZCodec");
+//}
 
     @Override
     public int run(String[] args) throws Exception {
