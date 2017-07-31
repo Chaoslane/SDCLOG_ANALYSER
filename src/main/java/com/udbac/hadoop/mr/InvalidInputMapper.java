@@ -1,6 +1,6 @@
 package com.udbac.hadoop.mr;
 
-import com.udbac.hadoop.common.LogConstants;
+import com.udbac.hadoop.common.Constants;
 import com.udbac.hadoop.common.LogParseException;
 import com.udbac.hadoop.common.RegexFilter;
 import com.udbac.hadoop.util.TimeUtil;
@@ -28,14 +28,14 @@ public class InvalidInputMapper extends Mapper<LongWritable, Text, NullWritable,
     protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
         String[] tokens = value.toString().split(" ");
         if (tokens.length != 17) {
-            context.getCounter(LogConstants.MyCounters.LINECOUNTER).increment(1);
+            context.getCounter(Constants.MyCounters.LINECOUNTER).increment(1);
             context.write(NullWritable.get(), value);
         }
         if (tokens.length == 17) {
             try {
                 TimeUtil.handleTime(tokens[2] + " " + tokens[3]);
             } catch (LogParseException e) {
-                context.getCounter(LogConstants.MyCounters.LINECOUNTER).increment(1);
+                context.getCounter(Constants.MyCounters.LINECOUNTER).increment(1);
                 context.write(NullWritable.get(), new Text("time format error: " + value.toString()));
             }
         }
@@ -64,7 +64,7 @@ public class InvalidInputMapper extends Mapper<LongWritable, Text, NullWritable,
         job.setNumReduceTasks(0);
 
         if (job.waitForCompletion(true)) {
-            System.out.println("job succeed" + job.getCounters().findCounter(LogConstants.MyCounters.LINECOUNTER).getValue());
+            System.out.println("job succeed" + job.getCounters().findCounter(Constants.MyCounters.LINECOUNTER).getValue());
         }
     }
 }

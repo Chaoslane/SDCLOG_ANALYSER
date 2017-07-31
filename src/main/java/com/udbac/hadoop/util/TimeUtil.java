@@ -1,14 +1,12 @@
 package com.udbac.hadoop.util;
 
-import com.udbac.hadoop.common.LogConstants;
+import com.udbac.hadoop.common.Constants;
 import com.udbac.hadoop.common.LogParseException;
-import org.apache.commons.lang.StringUtils;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,7 +17,7 @@ import java.util.regex.Pattern;
 public class TimeUtil {
 
 
-    private static SimpleDateFormat dateTimeFormat = new SimpleDateFormat(LogConstants.DATETIME_FORMAT);
+    private static SimpleDateFormat dateTimeFormat = new SimpleDateFormat(Constants.DATETIME_FORMAT);
 
     /**
      * 采集机时区问题 时间+8 hour 保证日志时间范围是1天内
@@ -62,7 +60,7 @@ public class TimeUtil {
     public static boolean isValidateDate(String input) {
         Matcher matcher = null;
         boolean result = false;
-        String regex = "[0-9]{4}-[0-9]{2}-[0-9]{2}";
+        String regex = "[0-9]{2}-[0-9]{2}-[0-9]{2}";
         if (input != null && !input.isEmpty()) {
             Pattern pattern = Pattern.compile(regex);
             matcher = pattern.matcher(input);
@@ -71,22 +69,5 @@ public class TimeUtil {
             result = matcher.matches();
         }
         return result;
-    }
-
-    /**
-     * 取得前一天日期
-     */
-    public static String getTommorow(String dateStr) throws ParseException {
-        SimpleDateFormat sdf = new SimpleDateFormat(LogConstants.DATE_FORMAT);
-        Date date = new Date(sdf.parse(dateStr).getTime() + 24 * 3600 * 1000);
-        return sdf.format(date);
-    }
-
-    /**
-     * 修改时间format
-     */
-    public static String formatDate(String source, String oldPattern, String newPattern) throws ParseException {
-        Date date = new SimpleDateFormat(oldPattern).parse(source);
-        return new SimpleDateFormat(newPattern).format(date);
     }
 }

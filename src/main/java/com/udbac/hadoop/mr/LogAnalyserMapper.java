@@ -2,7 +2,7 @@ package com.udbac.hadoop.mr;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.udbac.hadoop.common.LogConstants;
+import com.udbac.hadoop.common.Constants;
 import com.udbac.hadoop.common.LogParseException;
 import com.udbac.hadoop.common.LogParser;
 import com.udbac.hadoop.util.SplitValueBuilder;
@@ -32,7 +32,7 @@ public class LogAnalyserMapper extends Mapper<LongWritable, Text, NullWritable, 
     }
 
     protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
-        context.getCounter(LogConstants.MyCounters.LINECOUNTER).increment(1);
+        context.getCounter(Constants.MyCounters.LINECOUNTER).increment(1);
         try {
             Map<String, String> logMap = LogParser.logParserSDC(value.toString());
 

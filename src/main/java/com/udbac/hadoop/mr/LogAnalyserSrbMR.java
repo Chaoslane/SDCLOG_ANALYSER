@@ -1,10 +1,10 @@
 package com.udbac.hadoop.mr;
 
-import com.udbac.hadoop.common.LogConstants;
+import com.udbac.hadoop.common.Constants;
 import com.udbac.hadoop.common.LogParseException;
 import com.udbac.hadoop.common.LogParser;
 import com.udbac.hadoop.common.PairWritable;
-import com.udbac.hadoop.util.IPCacheParser;
+import com.udbac.hadoop.util.IPParser;
 import com.udbac.hadoop.util.SplitValueBuilder;
 import com.udbac.hadoop.util.TimeUtil;
 import org.apache.commons.lang.StringUtils;
@@ -27,29 +27,16 @@ public class LogAnalyserSrbMR {
 
     static class SessionMapper extends Mapper<LongWritable, Text, PairWritable, Text> {
         private static Logger logger = Logger.getLogger(SessionMapper.class);
-        private static IPCacheParser ipParser = IPCacheParser.getSingleIPParser();
-        private static String validDates = null;
-        private static String[] fieldsColumn = null;
-
-
-        @Override
-        protected void setup(Context context) throws IOException, InterruptedException {
-            validDates = context.getConfiguration().get("logs.date");
-            fieldsColumn = context.getConfiguration().get("fields.column").split(",");
-        }
+        private static IPParser ipParser = new IPParser.Cache();
 
         @Override
         protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
-                context.getCounter(LogConstants.MyCounters.LINECOUNTER).increment(1);
-                try {
+            context.getCounter(Constants.MyCounters.LINECOUNTER).increment(1);
+            try {
                 Map<String, String> logMap = LogParser.logParserSDC(value.toString());
 
-                if (null != validDates && !validDates.contains(logMap.get("date_time").split(" ")[0])) {
-                    throw new LogParseException("Unsupport date format: " + logMap.get("date_time"));
-                }
-
-                logMap.put("prov", ipParser.getArea(logMap.get("c_ip")).split(",")[0]);
-                logMap.put("city", ipParser.getArea(logMap.get("c_ip")).split(",")[1]);
+                logMap.put("prov", ipParser.getArea(logMap.get("c_ip"))[0]);
+                logMap.put("city", ipParser.getArea(logMap.get("c_ip"))[1]);
 
                 String ckid = StringUtils.defaultIfEmpty(logMap.get("ckid"), "");
                 String date_time = StringUtils.defaultIfEmpty(logMap.get("date_time"), "");
@@ -57,13 +44,13 @@ public class LogAnalyserSrbMR {
                 logMap.remove("date_time");
 
                 SplitValueBuilder svb = new SplitValueBuilder("\t").add(date_time);
-                for (String field : fieldsColumn) {
+                for (String field : LogAnalyserRunner.getFieldsColum().split(",")) {
                     svb.add(StringUtils.defaultIfBlank(logMap.get(field), ""));
                 }
 
                 context.write(new PairWritable(ckid, date_time), new Text(svb.toString()));
             } catch (LogParseException e) {
-                context.getCounter(LogConstants.MyCounters.FAILEDMAPPERLINE).increment(1);
+                context.getCounter(Constants.MyCounters.FAILEDMAPPERLINE).increment(1);
                 logger.error(e.getMessage());
             }
         }
@@ -86,7 +73,7 @@ public class LogAnalyserSrbMR {
                     Long timeInterval = 0L;
                     if (timeList.size() > 0) {
                         timeInterval = currTime - timeList.get(timeList.size() - 1);
-                        if ((currTime - timeList.get(0)) > LogConstants.HALFHOUR_OF_SECONDS) {
+                        if ((currTime - timeList.get(0)) > Constants.HALFHOUR_OF_SECONDS) {
                             timeList.clear();
                         }
                     }
@@ -98,8 +85,7 @@ public class LogAnalyserSrbMR {
                     context.write(NullWritable.get(), text);
                 }
             } catch (LogParseException e) {
-                context.getCounter(LogConstants.MyCounters.FAILEDREDUCERLINE).increment(1);
-                System.out.println(e.getMessage());
+                context.getCounter(Constants.MyCounters.FAILEDREDUCERLINE).increment(1);
                 logger.error(e.getMessage());
             }
         }

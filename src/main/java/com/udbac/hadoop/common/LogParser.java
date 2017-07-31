@@ -1,17 +1,14 @@
 package com.udbac.hadoop.common;
 
+import com.udbac.hadoop.mr.LogAnalyserRunner;
 import com.udbac.hadoop.util.TimeUtil;
+import com.udbac.hadoop.util.URLDecodeUtil;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configured;
 import org.apache.log4j.Logger;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Created by root on 2017/1/5.
@@ -22,6 +19,7 @@ public class LogParser extends Configured {
 
     public static Map<String, String> logParserSDC(String line) throws LogParseException {
         logMap.clear();
+
         String[] fields = line.split(" ");
 
         if (15 == fields.length) {
@@ -103,26 +101,32 @@ public class LogParser extends Configured {
         return logMap;
     }
 
+    /**
+     * 取得日志字段数组，拆解字符串，放入hashmap
+     * @param fields
+     * @param offset 日志数组索引偏移
+     * @throws LogParseException
+     */
     private static void handleRawFields(String[] fields, int offset) throws LogParseException {
-        logMap.put(dateTime,
-                TimeUtil.handleTime(fields[offset] + " " + fields[1 + offset]));
-        logMap.put(ip, fields[2 + offset]);
-        logMap.put(userName, fields[3 + offset]);
-        logMap.put(host, fields[4 + offset]);
-        logMap.put(method, fields[5 + offset]);
-        logMap.put(stem, fields[6 + offset]);
-        logMap.put(status, fields[8 + offset]);
-        logMap.put(bytes, fields[9 + offset]);
-        logMap.put(version, fields[10 + offset]);
-        logMap.put(userAgent, fields[11 + offset]);
-        logMap.put(referer, fields[13 + offset]);
-        if (fields[14 + offset].length() == 30) {
-            logMap.put(dcsid, fields[14 + offset].substring(26));
-            logMap.put(dcsid_l, fields[14 + offset]);
+
+        for (SdcField sdcField : SdcField.values()) {
+            int index = sdcField.ordinal();
+            if (index != SdcField.QUERY.ordinal() && index != SdcField.CSCOOKIE.ordinal()) {
+                logMap.put(sdcField.getKey(), fields[index + offset]);
+            }
         }
+        // 纠正日志日期时区，并验证日期合法
+        String dateTime = TimeUtil.handleTime(
+                logMap.get(SdcField.DATE.getKey()) + " " + logMap.get(SdcField.TIME.getKey()));
+
+        if (!dateTime.contains(LogAnalyserRunner.getLogDate())) {
+            throw new LogParseException("Error date, the log date must be:" + LogAnalyserRunner.getLogDate());
+        }
+
+        logMap.put("date_time", dateTime);
         // 拆解cs_uri_query、cs_cookie，生成参数表
-        handleQuery(fields[7 + offset], "&");
-        handleQuery(fields[12 + offset], ";+");
+        handleQuery(fields[SdcField.QUERY.ordinal() + offset], "&");
+        handleQuery(fields[SdcField.CSCOOKIE.ordinal() + offset], ";+");
     }
 
 
@@ -134,57 +138,15 @@ public class LogParser extends Configured {
                 String[] kv = item.split("=", 2);
                 if (kv.length == 2 && StringUtils.isNotEmpty(kv[1])) {
                     String key = kv[0].replaceAll("(wt|Wt|wT)", "WT");
-                    String value = kv[1].matches(".*((?:%[a-zA-Z\\d]{2})+).*") ? urlDecode(kv[1]) : kv[1];
+                    String value = URLDecodeUtil.decodeSafe(kv[1]);
                     logMap.put(key, StringUtils.isEmpty(value) ? null : value);
                 }
             }
         }
     }
 
-    //URL解码
-    private static String urlDecode(String strUrl) {
-        try {
-            strUrl = URLDecoder.decode(
-                    strUrl.replace("\\x", "%").replace("%25", "%"), "utf-8");
-        } catch (Exception e) {
-            logger.warn("URL decode error :" + strUrl);
-            if (strUrl.contains("http"))
-                strUrl = strUrl.split("\\?", 2)[0];
-            else strUrl = null;
-        }
-        return strUrl;
-    }
-
-
-    private static final String dateTime = "date_time";
-    private static final String ip = "c_ip";
-    private static final String userName = "cs_username";
-    private static final String host = "cs_host";
-    private static final String method = "cs_method";
-    private static final String stem = "cs_uri_stem";
-    private static final String status = "cs_status";
-    private static final String bytes = "cs_bytes";
-    private static final String version = "cs_version";
-    private static final String userAgent = "cs_useragent";
-    private static final String referer = "WT.referer";
-    private static final String dcsid = "dcsid";
-    private static final String dcsid_l = "dcsid_l";
     // cookieid
     private static final String[] ckids = {"WT.vtid", "WT.co_f"};
-
-    public static void main(String[] args) throws UnsupportedEncodingException {
-        final Pattern utf8Pattern = Pattern.compile("^([\\x01-\\x7f]|[\\xc0-\\xdf][\\x80-\\xbf]|[\\xe0-\\xef][\\x80-\\xbf]{2}|[\\xf0-\\xf7][\\x80-\\xbf]{3}|[\\xf8-\\xfb][\\x80-\\xbf]{4}|[\\xfc-\\xfd][\\x80-\\xbf]{5})+$");
-        final Pattern publicPattern = Pattern.compile("^([\\x01-\\x7f]|[\\xc0-\\xdf][\\x80-\\xbf])+$");
-        String str1 = "%E4%B8%AD%E5%9B%BD%E7%A7%BB%E5%8A%A8";
-        String str2 = "%D6%D0%B9%FA%D2%C6%B6%AF";
-        Matcher matcher = publicPattern.matcher(str1);
-        if (matcher.matches()) {
-            System.out.println("GBK");
-        }
-
-        System.out.println(URLEncoder.encode("四川移动","utf-8"));
-        System.out.println(URLEncoder.encode("中国移动","GB2312"));
-    }
 
 }
 
