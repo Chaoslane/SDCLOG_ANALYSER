@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.udbac.hadoop.common.Constants;
 import com.udbac.hadoop.common.LogParseException;
-import com.udbac.hadoop.common.LogParser;
 import com.udbac.hadoop.util.SplitValueBuilder;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.io.LongWritable;

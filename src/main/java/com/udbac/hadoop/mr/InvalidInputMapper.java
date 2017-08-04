@@ -23,20 +23,31 @@ import java.io.IOException;
  * Created by root on 2017/6/20.
  */
 public class InvalidInputMapper extends Mapper<LongWritable, Text, NullWritable, Text> {
+    String date;
+
+    @Override
+    protected void setup(Context context) throws IOException, InterruptedException {
+        super.setup(context);
+        date = context.getConfiguration().get("log.date");
+    }
 
     @Override
     protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
         String[] tokens = value.toString().split(" ");
         if (tokens.length != 17) {
             context.getCounter(Constants.MyCounters.LINECOUNTER).increment(1);
-            context.write(NullWritable.get(), value);
+            context.write(NullWritable.get(), new Text("format error: " + value.toString()));
         }
         if (tokens.length == 17) {
             try {
-                TimeUtil.handleTime(tokens[2] + " " + tokens[3]);
+                String dateTime = TimeUtil.handleTime(tokens[2] + " " + tokens[3]);
+                if (!dateTime.contains(date)) {
+                    context.getCounter(Constants.MyCounters.LINECOUNTER).increment(1);
+                    context.write(NullWritable.get(),new Text("date error: " +value.toString()));
+                }
             } catch (LogParseException e) {
                 context.getCounter(Constants.MyCounters.LINECOUNTER).increment(1);
-                context.write(NullWritable.get(), new Text("time format error: " + value.toString()));
+                context.write(NullWritable.get(), new Text("time error: " + value.toString()));
             }
         }
     }

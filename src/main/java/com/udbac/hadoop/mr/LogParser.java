@@ -1,12 +1,16 @@
-package com.udbac.hadoop.common;
+package com.udbac.hadoop.mr;
 
-import com.udbac.hadoop.mr.LogAnalyserRunner;
+import com.udbac.hadoop.common.LogParseException;
+import com.udbac.hadoop.common.SdcField;
+import com.udbac.hadoop.common.UserAgent;
 import com.udbac.hadoop.util.TimeUtil;
 import com.udbac.hadoop.util.URLDecodeUtil;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configured;
 import org.apache.log4j.Logger;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -103,6 +107,7 @@ public class LogParser extends Configured {
 
     /**
      * 取得日志字段数组，拆解字符串，放入hashmap
+     *
      * @param fields
      * @param offset 日志数组索引偏移
      * @throws LogParseException
@@ -111,7 +116,9 @@ public class LogParser extends Configured {
 
         for (SdcField sdcField : SdcField.values()) {
             int index = sdcField.ordinal();
-            if (index != SdcField.QUERY.ordinal() && index != SdcField.CSCOOKIE.ordinal()) {
+            if (index != SdcField.QUERY.ordinal()
+                    && index != SdcField.CSCOOKIE.ordinal()
+                    && index != SdcField.USERAGENT.ordinal()) {
                 logMap.put(sdcField.getKey(), fields[index + offset]);
             }
         }
@@ -127,6 +134,8 @@ public class LogParser extends Configured {
         // 拆解cs_uri_query、cs_cookie，生成参数表
         handleQuery(fields[SdcField.QUERY.ordinal() + offset], "&");
         handleQuery(fields[SdcField.CSCOOKIE.ordinal() + offset], ";+");
+
+        logMap.putAll(new UserAgent(fields[SdcField.USERAGENT.ordinal() + offset]).toMap());
     }
 
 
